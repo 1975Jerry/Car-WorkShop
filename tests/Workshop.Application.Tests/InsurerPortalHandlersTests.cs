@@ -85,7 +85,7 @@ public class InsurerPortalHandlersTests
         await using var db = TestDb.NewContext();
         var (insA, _, caseA, _) = await SeedTwoInsurersAsync(db);
 
-        await new InsurerDecideHandler(db, TimeProvider.System).Handle(
+        await new InsurerDecideHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new InsurerDecideCommand(insA, caseA, ApprovalStatus.Approved,
                 new InsurerDecisionDto(1500m, "Approved per assessment")), default);
 
@@ -103,10 +103,10 @@ public class InsurerPortalHandlersTests
         var (insA, _, caseA, _) = await SeedTwoInsurersAsync(db);
 
         // First approve, then reject — verify ApprovedAmount gets zeroed.
-        await new InsurerDecideHandler(db, TimeProvider.System).Handle(
+        await new InsurerDecideHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new InsurerDecideCommand(insA, caseA, ApprovalStatus.Approved,
                 new InsurerDecisionDto(1500m, null)), default);
-        await new InsurerDecideHandler(db, TimeProvider.System).Handle(
+        await new InsurerDecideHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new InsurerDecideCommand(insA, caseA, ApprovalStatus.Rejected,
                 new InsurerDecisionDto(0m, "Out of scope")), default);
 
@@ -124,7 +124,7 @@ public class InsurerPortalHandlersTests
         var (_, insB, caseA, _) = await SeedTwoInsurersAsync(db);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            new InsurerDecideHandler(db, TimeProvider.System).Handle(
+            new InsurerDecideHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
                 new InsurerDecideCommand(insB, caseA, ApprovalStatus.Approved,
                     new InsurerDecisionDto(500m, null)), default));
     }
@@ -136,7 +136,7 @@ public class InsurerPortalHandlersTests
         var (insA, _, caseA, _) = await SeedTwoInsurersAsync(db);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            new InsurerDecideHandler(db, TimeProvider.System).Handle(
+            new InsurerDecideHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
                 new InsurerDecideCommand(insA, caseA, ApprovalStatus.Pending,
                     new InsurerDecisionDto(0m, null)), default));
     }

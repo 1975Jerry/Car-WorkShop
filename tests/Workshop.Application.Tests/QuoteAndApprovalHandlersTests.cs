@@ -45,7 +45,7 @@ public class QuoteAndApprovalHandlersTests
         await SeedAssessmentForCaseAsync(db, caseId, panelAllowed, polish: 100, repair: 200);
         await SeedCompanyProfileAsync(db, vatRate: 24m);
 
-        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator());
+        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator(), new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         var quoteId = await handler.Handle(new IssueQuoteCommand(caseId), default);
 
         var saved = await db.Quotes.AsNoTracking().FirstAsync(q => q.Id == quoteId);
@@ -68,7 +68,7 @@ public class QuoteAndApprovalHandlersTests
         await SeedAssessmentForCaseAsync(db, caseId, panelAllowed);
         await SeedCompanyProfileAsync(db);
 
-        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator());
+        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator(), new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         var first = await handler.Handle(new IssueQuoteCommand(caseId), default);
         var second = await handler.Handle(new IssueQuoteCommand(caseId), default);
 
@@ -86,7 +86,7 @@ public class QuoteAndApprovalHandlersTests
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
         await SeedCompanyProfileAsync(db);
 
-        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator());
+        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator(), new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.Handle(new IssueQuoteCommand(caseId), default));
     }
@@ -99,7 +99,7 @@ public class QuoteAndApprovalHandlersTests
         await SeedAssessmentForCaseAsync(db, caseId, panelAllowed, polish: 100, repair: 200);
         await SeedCompanyProfileAsync(db);
 
-        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator());
+        var handler = new IssueQuoteHandler(db, new TestCurrentUser(), TimeProvider.System, new FakeQuotePdfGenerator(), new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         var quoteId = await handler.Handle(
             new IssueQuoteCommand(caseId, LaborDiscountAmount: 50m), default);
 

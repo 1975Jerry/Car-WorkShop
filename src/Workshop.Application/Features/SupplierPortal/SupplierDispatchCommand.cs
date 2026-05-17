@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
+using Workshop.Application.Common.Notifications;
 using Workshop.Application.Features.InsuranceParts;
 using Workshop.Domain.Enums;
 
@@ -20,7 +21,11 @@ public record SupplierDispatchCommand(
     PartReceivedStatus TargetStatus,
     string? Notes = null) : IRequest;
 
-public class SupplierDispatchHandler(IWorkshopDbContext db, TimeProvider clock)
+public class SupplierDispatchHandler(
+    IWorkshopDbContext db,
+    TimeProvider clock,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<SupplierDispatchCommand>
 {
     public async Task Handle(SupplierDispatchCommand cmd, CancellationToken ct)
@@ -30,6 +35,10 @@ public class SupplierDispatchHandler(IWorkshopDbContext db, TimeProvider clock)
                 "Receipt is confirmed by the workshop, not the supplier.");
 
         var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
+        Guid? insuranceCaseId = null;
+        Guid? retailCaseId = null;
+        string partName = string.Empty;
+        string caseNumber = string.Empty;
 
         if (cmd.Kind == SupplierLineKind.Insurance)
         {
@@ -58,6 +67,14 @@ public class SupplierDispatchHandler(IWorkshopDbContext db, TimeProvider clock)
                     break;
             }
             if (!string.IsNullOrWhiteSpace(cmd.Notes)) line.Notes = cmd.Notes;
+
+            var meta = await db.InsurancePartLines.AsNoTracking()
+                .Where(p => p.Id == cmd.LineId)
+                .Select(p => new { p.PartName, CaseId = p.Assessment.InsuranceCaseId, p.Assessment.InsuranceCase.CaseNumber })
+                .FirstAsync(ct);
+            insuranceCaseId = meta.CaseId;
+            partName = meta.PartName;
+            caseNumber = meta.CaseNumber;
         }
         else
         {
@@ -72,10 +89,47 @@ public class SupplierDispatchHandler(IWorkshopDbContext db, TimeProvider clock)
 
             line.ReceivedStatus = cmd.TargetStatus;
             if (!string.IsNullOrWhiteSpace(cmd.Notes)) line.Notes = cmd.Notes;
+
+            retailCaseId = line.RetailCaseId;
+            partName = line.PartName;
+            caseNumber = await db.RetailCases.AsNoTracking()
+                .Where(c => c.Id == line.RetailCaseId)
+                .Select(c => c.CaseNumber)
+                .FirstAsync(ct);
         }
 
         await db.SaveChangesAsync(ct);
+
+        var to = await recipients.ResolveAsync(
+            insuranceCaseId, retailCaseId,
+            CaseAudienceFlags.AssignedStaff,
+            ct);
+        if (to.Count > 0)
+        {
+            var url = insuranceCaseId is { } iid
+                ? $"/cases/insurance/{iid}"
+                : $"/cases/retail/{retailCaseId!.Value}";
+            await notifications.DispatchAsync(new NotificationRequest(
+                Kind: NotificationKind.SupplierDispatch,
+                TitleGr: $"Ανταλλακτικό {caseNumber}: {StatusLabelGr(cmd.TargetStatus)}",
+                TitleEn: $"Part {caseNumber}: {cmd.TargetStatus}",
+                BodyGr: $"«{partName}»: ο προμηθευτής δήλωσε {StatusLabelGr(cmd.TargetStatus)}.",
+                BodyEn: $"\"{partName}\": supplier marked {cmd.TargetStatus}.",
+                Url: url,
+                Recipients: to), ct);
+        }
     }
+
+    private static string StatusLabelGr(PartReceivedStatus s) => s switch
+    {
+        PartReceivedStatus.Pending => "Εκκρεμεί",
+        PartReceivedStatus.Ordered => "Παραγγέλθηκε",
+        PartReceivedStatus.InTransit => "Σε Μεταφορά",
+        PartReceivedStatus.Received => "Παραλήφθηκε",
+        PartReceivedStatus.Defective => "Ελαττωματικό",
+        PartReceivedStatus.Cancelled => "Ακυρώθηκε",
+        _ => s.ToString(),
+    };
 }
 
 public class SupplierDispatchValidator : AbstractValidator<SupplierDispatchCommand>

@@ -45,7 +45,7 @@ public class RetailEndToEndPathTests
             new TransitionRetailCaseCommand(caseId, RetailCaseStatus.Completed, null), default);
 
         // 4. Pay full amount, then move to Paid.
-        await new CreateRetailPaymentHandler(db).Handle(
+        await new CreateRetailPaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new CreateRetailPaymentCommand(caseId, new CreatePaymentDto(
                 496m, DateOnly.FromDateTime(DateTime.Today), PaymentMethod.Cash,
                 "Customer", null, null)), default);
@@ -95,7 +95,7 @@ public class RetailEndToEndPathTests
         await t.Handle(new TransitionRetailCaseCommand(caseId, RetailCaseStatus.Completed, null), default);
 
         // Pay only part of it.
-        await new CreateRetailPaymentHandler(db).Handle(
+        await new CreateRetailPaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new CreateRetailPaymentCommand(caseId, new CreatePaymentDto(
                 100m, DateOnly.FromDateTime(DateTime.Today), PaymentMethod.Cash,
                 "Customer", null, null)), default);

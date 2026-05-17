@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Workshop.Application.Common.Behaviors;
+using Workshop.Application.Common.Notifications;
 using Workshop.Application.Features.Assessments;
 using Workshop.Application.Features.InsuranceCases;
 
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly);
         services.AddScoped<ICaseGuardContextBuilder, CaseGuardContextBuilder>();
         services.AddScoped<IAllowedOpsValidator, AllowedOpsValidator>();
+        services.AddScoped<ICaseNotificationRecipients, CaseNotificationRecipients>();
         return services;
     }
 }

@@ -2,21 +2,26 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
+using Workshop.Application.Common.Notifications;
 using Workshop.Domain.Entities.Insurance;
 
 namespace Workshop.Application.Features.Payments;
 
 public record CreatePaymentCommand(Guid InsuranceCaseId, CreatePaymentDto Data) : IRequest<Guid>;
 
-public class CreatePaymentHandler(IWorkshopDbContext db)
+public class CreatePaymentHandler(
+    IWorkshopDbContext db,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<CreatePaymentCommand, Guid>
 {
     public async Task<Guid> Handle(CreatePaymentCommand cmd, CancellationToken ct)
     {
-        var caseExists = await db.InsuranceCases.AsNoTracking()
-            .AnyAsync(c => c.Id == cmd.InsuranceCaseId, ct);
-        if (!caseExists)
-            throw new KeyNotFoundException($"Insurance case {cmd.InsuranceCaseId} not found");
+        var caseInfo = await db.InsuranceCases.AsNoTracking()
+            .Where(c => c.Id == cmd.InsuranceCaseId)
+            .Select(c => new { c.CaseNumber })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new KeyNotFoundException($"Insurance case {cmd.InsuranceCaseId} not found");
 
         var d = cmd.Data;
         var entity = new Payment
@@ -31,6 +36,23 @@ public class CreatePaymentHandler(IWorkshopDbContext db)
         };
         db.Payments.Add(entity);
         await db.SaveChangesAsync(ct);
+
+        var to = await recipients.ResolveAsync(
+            cmd.InsuranceCaseId, null,
+            CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            ct);
+        if (to.Count > 0)
+        {
+            await notifications.DispatchAsync(new NotificationRequest(
+                Kind: NotificationKind.PaymentRecorded,
+                TitleGr: $"Πληρωμή {caseInfo.CaseNumber}: {d.Amount:N2} €",
+                TitleEn: $"Payment {caseInfo.CaseNumber}: {d.Amount:N2} €",
+                BodyGr: $"Καταχωρήθηκε πληρωμή {d.Amount:N2} € ({d.PaymentMethod}).",
+                BodyEn: $"Payment of {d.Amount:N2} € recorded ({d.PaymentMethod}).",
+                Url: $"/cases/insurance/{cmd.InsuranceCaseId}",
+                Recipients: to), ct);
+        }
+
         return entity.Id;
     }
 }
@@ -51,15 +73,19 @@ public class DeletePaymentHandler(IWorkshopDbContext db)
 
 public record CreateRetailPaymentCommand(Guid RetailCaseId, CreatePaymentDto Data) : IRequest<Guid>;
 
-public class CreateRetailPaymentHandler(IWorkshopDbContext db)
+public class CreateRetailPaymentHandler(
+    IWorkshopDbContext db,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<CreateRetailPaymentCommand, Guid>
 {
     public async Task<Guid> Handle(CreateRetailPaymentCommand cmd, CancellationToken ct)
     {
-        var caseExists = await db.RetailCases.AsNoTracking()
-            .AnyAsync(c => c.Id == cmd.RetailCaseId, ct);
-        if (!caseExists)
-            throw new KeyNotFoundException($"Retail case {cmd.RetailCaseId} not found");
+        var caseInfo = await db.RetailCases.AsNoTracking()
+            .Where(c => c.Id == cmd.RetailCaseId)
+            .Select(c => new { c.CaseNumber })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new KeyNotFoundException($"Retail case {cmd.RetailCaseId} not found");
 
         var d = cmd.Data;
         var entity = new Payment
@@ -74,6 +100,23 @@ public class CreateRetailPaymentHandler(IWorkshopDbContext db)
         };
         db.Payments.Add(entity);
         await db.SaveChangesAsync(ct);
+
+        var to = await recipients.ResolveAsync(
+            null, cmd.RetailCaseId,
+            CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            ct);
+        if (to.Count > 0)
+        {
+            await notifications.DispatchAsync(new NotificationRequest(
+                Kind: NotificationKind.PaymentRecorded,
+                TitleGr: $"Πληρωμή {caseInfo.CaseNumber}: {d.Amount:N2} €",
+                TitleEn: $"Payment {caseInfo.CaseNumber}: {d.Amount:N2} €",
+                BodyGr: $"Καταχωρήθηκε πληρωμή {d.Amount:N2} € ({d.PaymentMethod}).",
+                BodyEn: $"Payment of {d.Amount:N2} € recorded ({d.PaymentMethod}).",
+                Url: $"/cases/retail/{cmd.RetailCaseId}",
+                Recipients: to), ct);
+        }
+
         return entity.Id;
     }
 }

@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
+using Workshop.Application.Common.Notifications;
 using Workshop.Domain.Entities.Insurance;
 using Workshop.Domain.Enums;
 
@@ -9,15 +10,19 @@ namespace Workshop.Application.Features.Repairs;
 
 public record UpsertRepairScheduleCommand(Guid InsuranceCaseId, UpsertRepairScheduleDto Data) : IRequest<Guid>;
 
-public class UpsertRepairScheduleHandler(IWorkshopDbContext db)
+public class UpsertRepairScheduleHandler(
+    IWorkshopDbContext db,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<UpsertRepairScheduleCommand, Guid>
 {
     public async Task<Guid> Handle(UpsertRepairScheduleCommand cmd, CancellationToken ct)
     {
-        var caseExists = await db.InsuranceCases.AsNoTracking()
-            .AnyAsync(c => c.Id == cmd.InsuranceCaseId, ct);
-        if (!caseExists)
-            throw new KeyNotFoundException($"Insurance case {cmd.InsuranceCaseId} not found");
+        var caseInfo = await db.InsuranceCases.AsNoTracking()
+            .Where(c => c.Id == cmd.InsuranceCaseId)
+            .Select(c => new { c.CaseNumber })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new KeyNotFoundException($"Insurance case {cmd.InsuranceCaseId} not found");
 
         var repair = await db.Repairs.FirstOrDefaultAsync(r => r.InsuranceCaseId == cmd.InsuranceCaseId, ct);
         if (repair is null)
@@ -40,6 +45,26 @@ public class UpsertRepairScheduleHandler(IWorkshopDbContext db)
             repair.Notes = cmd.Data.Notes;
 
         await db.SaveChangesAsync(ct);
+
+        var to = await recipients.ResolveAsync(
+            cmd.InsuranceCaseId, null,
+            CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            ct);
+        if (to.Count > 0)
+        {
+            var when = repair.ScheduledTime is { } t
+                ? $"{repair.ScheduledDate:dd/MM/yyyy} {t:HH:mm}"
+                : repair.ScheduledDate.ToString("dd/MM/yyyy");
+            await notifications.DispatchAsync(new NotificationRequest(
+                Kind: NotificationKind.RepairScheduled,
+                TitleGr: $"Επισκευή {caseInfo.CaseNumber}: {when}",
+                TitleEn: $"Repair {caseInfo.CaseNumber}: {when}",
+                BodyGr: $"Προγραμματίστηκε επισκευή στις {when}.",
+                BodyEn: $"Repair scheduled for {when}.",
+                Url: $"/cases/insurance/{cmd.InsuranceCaseId}",
+                Recipients: to), ct);
+        }
+
         return repair.Id;
     }
 }

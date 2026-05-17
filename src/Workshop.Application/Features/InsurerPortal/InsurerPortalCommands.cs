@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
+using Workshop.Application.Common.Notifications;
 using Workshop.Domain.Entities.Insurance;
 using Workshop.Domain.Enums;
 
@@ -19,7 +20,11 @@ public record InsurerDecideCommand(
     ApprovalStatus Decision,
     InsurerDecisionDto Data) : IRequest;
 
-public class InsurerDecideHandler(IWorkshopDbContext db, TimeProvider clock)
+public class InsurerDecideHandler(
+    IWorkshopDbContext db,
+    TimeProvider clock,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<InsurerDecideCommand>
 {
     public async Task Handle(InsurerDecideCommand cmd, CancellationToken ct)
@@ -30,7 +35,7 @@ public class InsurerDecideHandler(IWorkshopDbContext db, TimeProvider clock)
 
         var caseRow = await db.InsuranceCases.AsNoTracking()
             .Where(c => c.Id == cmd.InsuranceCaseId)
-            .Select(c => new { c.Id, c.InsuranceCompanyId })
+            .Select(c => new { c.Id, c.CaseNumber, c.InsuranceCompanyId })
             .FirstOrDefaultAsync(ct)
             ?? throw new KeyNotFoundException($"Insurance case {cmd.InsuranceCaseId} not found");
 
@@ -61,6 +66,28 @@ public class InsurerDecideHandler(IWorkshopDbContext db, TimeProvider clock)
         approval.Notes = cmd.Data.Notes;
 
         await db.SaveChangesAsync(ct);
+
+        var to = await recipients.ResolveAsync(
+            cmd.InsuranceCaseId, null,
+            CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            ct);
+        if (to.Count > 0)
+        {
+            var approvedGr = cmd.Decision == ApprovalStatus.Approved ? "Εγκρίθηκε" : "Απορρίφθηκε";
+            var approvedEn = cmd.Decision == ApprovalStatus.Approved ? "approved" : "rejected";
+            await notifications.DispatchAsync(new NotificationRequest(
+                Kind: NotificationKind.InsuranceApprovalDecision,
+                TitleGr: $"Έγκριση {caseRow.CaseNumber}: {approvedGr}",
+                TitleEn: $"Approval {caseRow.CaseNumber}: {approvedEn}",
+                BodyGr: cmd.Decision == ApprovalStatus.Approved
+                    ? $"Εγκεκριμένο ποσό: {approval.ApprovedAmount:N2} €."
+                    : $"Λόγος απόρριψης: {cmd.Data.Notes}",
+                BodyEn: cmd.Decision == ApprovalStatus.Approved
+                    ? $"Approved amount: {approval.ApprovedAmount:N2} €."
+                    : $"Rejection reason: {cmd.Data.Notes}",
+                Url: $"/cases/insurance/{cmd.InsuranceCaseId}",
+                Recipients: to), ct);
+        }
     }
 }
 

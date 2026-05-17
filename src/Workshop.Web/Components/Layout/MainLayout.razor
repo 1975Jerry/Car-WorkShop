@@ -38,6 +38,7 @@
         <MudIconButton Icon="@(_isDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" Color="Color.Inherit" OnClick="@(() => _isDark = !_isDark)" />
         <AuthorizeView>
             <Authorized>
+                <Workshop.Web.Components.Shared.NotificationBell />
                 <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit">
                     <MudText Class="px-4 py-2" Typo="Typo.body2">@context.User.Identity?.Name</MudText>
                     <MudDivider />
@@ -54,6 +55,7 @@
             <MudNavLink Href="/cases/retail" Icon="@Icons.Material.Filled.Store">@L["RetailCases"]</MudNavLink>
             <MudNavLink Href="/customers" Icon="@Icons.Material.Filled.People">@L["Customers"]</MudNavLink>
             <MudNavLink Href="/vehicles" Icon="@Icons.Material.Filled.DirectionsCar">@L["Vehicles"]</MudNavLink>
+            <MudNavLink Href="/reports" Icon="@Icons.Material.Filled.Assessment">@L["Reports"]</MudNavLink>
             <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.Settings">@L["Admin"]</MudNavLink>
         </MudNavMenu>
     </MudDrawer>

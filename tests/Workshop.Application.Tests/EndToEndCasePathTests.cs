@@ -83,7 +83,7 @@ public class EndToEndCasePathTests
         await db.SaveChangesAsync();
 
         var guardBuilder = new CaseGuardContextBuilder(db, user);
-        var transition = new TransitionInsuranceCaseHandler(db, guardBuilder, user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, guardBuilder, user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
 
         // 1. NewCase → AssessorAppointment
         await transition.Handle(new TransitionInsuranceCaseCommand(caseId,
@@ -107,7 +107,7 @@ public class EndToEndCasePathTests
         Assert.Equal(InsuranceCaseStatus.Assessment, await StatusOf(db, caseId));
 
         // 4. Issue Quote (so HasCurrentQuote guard passes).
-        await new IssueQuoteHandler(db, user, TimeProvider.System, new FakeQuotePdfGenerator())
+        await new IssueQuoteHandler(db, user, TimeProvider.System, new FakeQuotePdfGenerator(), new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients())
             .Handle(new IssueQuoteCommand(caseId), default);
 
         // 4b. Upload required documents (CaseForm + InsuranceForm) so the guard passes.
@@ -167,7 +167,7 @@ public class EndToEndCasePathTests
 
         // 11. Schedule repair with technician.
         var techId = user.UserId!.Value; // reuse the test user as a technician
-        await new UpsertRepairScheduleHandler(db).Handle(
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new UpsertRepairScheduleCommand(caseId, new UpsertRepairScheduleDto(
                 DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 new TimeOnly(9, 0), techId, "Phase-6 scheduled")), default);
@@ -198,7 +198,7 @@ public class EndToEndCasePathTests
         Assert.Equal(InsuranceCaseStatus.Settlement, await StatusOf(db, caseId));
 
         // 15. Record payments covering the approved amount (300m).
-        await new CreatePaymentHandler(db).Handle(new CreatePaymentCommand(caseId,
+        await new CreatePaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new CreatePaymentCommand(caseId,
             new CreatePaymentDto(300m, DateOnly.FromDateTime(DateTime.Today),
                 PaymentMethod.InsurancePayout, "Insurer", "REF-1", null)), default);
 
@@ -249,17 +249,17 @@ public class EndToEndCasePathTests
             new UpsertInsuranceApprovalCommand(caseId, new InsuranceApprovalUpsertDto(
                 true, false, null, 500m,
                 DateOnly.FromDateTime(DateTime.Today), ApprovalStatus.Approved, null)), default);
-        await new CreatePaymentHandler(db).Handle(new CreatePaymentCommand(caseId,
+        await new CreatePaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new CreatePaymentCommand(caseId,
             new CreatePaymentDto(200m, DateOnly.FromDateTime(DateTime.Today),
                 PaymentMethod.Cash, null, null, null)), default);
 
-        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             transition.Handle(new TransitionInsuranceCaseCommand(caseId,
                 CaseTriggerEvent.ConfirmPayment, null), default));
 
         // Top up the payment and try again — should succeed.
-        await new CreatePaymentHandler(db).Handle(new CreatePaymentCommand(caseId,
+        await new CreatePaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new CreatePaymentCommand(caseId,
             new CreatePaymentDto(300m, DateOnly.FromDateTime(DateTime.Today),
                 PaymentMethod.Cash, null, null, null)), default);
         await transition.Handle(new TransitionInsuranceCaseCommand(caseId,
@@ -283,7 +283,7 @@ public class EndToEndCasePathTests
             PortalAudience = PortalAudience.Staff, Language = "el", IsActive = true
         });
 
-        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             transition.Handle(new TransitionInsuranceCaseCommand(caseId,
                 CaseTriggerEvent.CloseCase, null), default));
@@ -306,12 +306,12 @@ public class EndToEndCasePathTests
             PortalAudience = PortalAudience.Staff, Language = "el", IsActive = true
         });
         // Schedule the repair but DO NOT assign a technician.
-        await new UpsertRepairScheduleHandler(db).Handle(
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new UpsertRepairScheduleCommand(caseId, new UpsertRepairScheduleDto(
                 DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, null, null)), default);
 
-        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             transition.Handle(new TransitionInsuranceCaseCommand(caseId,
                 CaseTriggerEvent.StartRepair, null), default));
@@ -343,7 +343,7 @@ public class EndToEndCasePathTests
             PortalAudience = PortalAudience.Staff, Language = "el", IsActive = true
         });
 
-        await new UpsertRepairScheduleHandler(db).Handle(new UpsertRepairScheduleCommand(caseId,
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today),
                 null, user.UserId, null)), default);
         await new StartRepairHandler(db, TimeProvider.System).Handle(new StartRepairCommand(caseId), default);
@@ -355,7 +355,7 @@ public class EndToEndCasePathTests
         await db.SaveChangesAsync();
 
         // Intermediate inspection is required but NOT marked done — guard should block.
-        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             transition.Handle(new TransitionInsuranceCaseCommand(caseId,
                 CaseTriggerEvent.CompleteRepair, null), default));
@@ -401,7 +401,7 @@ public class EndToEndCasePathTests
                     "Pending Part", 1m, 100m, null, AvailabilityStatus.Available, true, null)),
             default);
 
-        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             transition.Handle(new TransitionInsuranceCaseCommand(caseId,
                 CaseTriggerEvent.AllPartsReceived, null), default));
@@ -428,7 +428,7 @@ public class EndToEndCasePathTests
                 true, false, null, 0m,
                 DateOnly.FromDateTime(DateTime.Today), ApprovalStatus.Rejected, "Not covered")), default);
 
-        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System);
+        var transition = new TransitionInsuranceCaseHandler(db, new CaseGuardContextBuilder(db, user), user, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await transition.Handle(new TransitionInsuranceCaseCommand(caseId,
             CaseTriggerEvent.ApprovalRejected, "Rejected"), default);
 

@@ -12,19 +12,21 @@ This document is the single source of truth for the data model and behavior. All
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Backend | ASP.NET Core 8 (LTS) | C# 12 |
-| Frontend | Blazor Server | Main staff app + 3 external portals |
+| Backend | ASP.NET Core 10 | C# 13 |
+| Frontend | Blazor Server | Staff app plus customer / insurer / supplier portals (all served by `Workshop.Web`) |
 | UI library | **MudBlazor** | Material Design 3 components, themable |
-| ORM | EF Core 8 | Code-first migrations |
+| ORM | EF Core 10 | Code-first migrations, snake-case naming convention |
 | Database | PostgreSQL 16 | via Npgsql provider |
-| Auth | ASP.NET Core Identity | 4 user types via roles + claims |
-| Workflow engine | Stateless 5.x | State machine for InsuranceCase 12 stages |
-| Validation | FluentValidation 11 | Request/command validation |
-| PDF | QuestPDF 2024.x | Quote and invoice generation |
-| i18n | IStringLocalizer + .resx | EL primary, EN secondary |
-| File storage | Local filesystem (dev) / S3 or Azure Blob (prod) | Behind an `IFileStore` abstraction |
+| Auth | ASP.NET Core Identity | 4 user types (`PortalAudience`) via roles + claims |
+| Workflow engine | Stateless 5.20.x | State machine for InsuranceCase 12 stages |
+| Validation | FluentValidation 12 | Request/command validation, MediatR pipeline behavior |
+| PDF | QuestPDF 2026.x | Quote PDF in place; Invoice / Receipt / Case Form templates pending |
+| i18n | IStringLocalizer + .resx | EL primary, EN secondary (401 keys each, at parity) |
+| File storage | Local filesystem (dev) | Behind an `IFileStore` abstraction; S3/Azure Blob adapter pending |
+| Notifications | Email + SMS + in-app | Logging-only stub senders in place behind `IEmailSender` / `ISmsSender` |
+| myDATA (AADE) | Stub client | `IMyDataClient` with deterministic fake MARK; real AADE REST adapter pending |
 | Logging | Serilog → file + console | Structured logs |
-| Background jobs | Hangfire | Reminders, scheduled tasks (Phase 9+) |
+| Background jobs | Hangfire (planned) | Listed in stack, not yet wired — needed for reminders + scheduled myDATA submission |
 
 ---
 
@@ -561,8 +563,7 @@ Photos can attach to either an Assessment (damage intake photos) **or** a Repair
 | `Status` | enum (Scheduled / InProgress / OnHold / Completed) | Y |
 
 > _No retail-specific Photo or Document entity — those reuse the unified `Photo` and `Document` tables which can FK to either Insurance or Retail._
-> _`Photo` table needs an additional `RetailRepairId` FK column to support retail; or we can keep photos optional on RetailCase via `Document` table only._
-> **Decision needed:** photos for retail jobs — `Document` of type `Photo`, or extend `Photo` table? Default below: extend `Photo` to also allow `RetailRepairId`.
+> **Resolved:** the `Photo` table was extended with a nullable `RetailRepairId` FK. Retail repairs use the same upload pipeline as insurance repairs.
 
 ---
 
@@ -669,40 +670,46 @@ Branch scoping: a `BranchManager` sees only their `BranchId`. `Admin` and `BodyS
 | `seed/branches.json` | TBD with user | 1+ | At least one default branch + warehouse |
 | `seed/admin-user.json` | Generated | 1 | Default admin login printed at first run |
 
-> **Note on `PartCatalog`:** the `ΜΕΡΗ ΑΥΤΟΚΙΝΗΤΟΥ.docx` taxonomy seeds a separate `PartCatalog` table (Category → Subcategory → Part). The per-case `InsurancePartLine.PartName` is free-text (since the assessor may need to add parts not in the catalog) but the UI offers autocomplete from `PartCatalog`. **Not yet entity-modeled in Section 4 — will add if you want this in Phase 1.**
+> **Status on `PartCatalog`:** still not modelled. `PartLine.PartName` remains free-text. Adding the taxonomy entity + seed is the next domain-model increment.
 
 ---
 
-## 8. Open items flagged for decision
+## 8. Open items
 
-These don't block scaffolding but should be resolved before the relevant phase:
+### Resolved during implementation
+1. **Photos on RetailRepair** — ✅ `Photo` table extended with nullable `RetailRepairId` FK.
+2. **Quote revisions** — ✅ kept as separate rows via the `IsCurrent` flag; the issue command flips prior currents to `false`.
+3. **Greek myDATA integration** — ✅ Phase 11 landed `IMyDataClient` abstraction + stub. Real AADE adapter still pending.
+4. **Damage diagram interactive UI** — ✅ `BodyPanelPicker.razor` renders the SVG with clickable hotspots driven by `BodyPanel.DiagramX/Y`.
+5. **Default admin credentials** — ✅ auto-generated on first seed run, printed to console.
+6. **Multi-tenancy readiness** — ✅ confirmed single-tenant. No `TenantId` on entities.
 
-1. **Photos on RetailRepair** — extend `Photo` table with `RetailRepairId` FK (current default) or keep retail photos in `Document` only?
-2. **`PartCatalog` entity** — model the hierarchical car-parts taxonomy as a proper entity, or keep `PartName` free-text on PartLine?
-3. **Quote revisions** — if a quote changes after issue (renegotiation), do we keep prior versions (`IsCurrent` flag, current default) or just update in place?
-4. **Greek insurance integrations** — myDATA (electronic invoicing) is mandatory in Greece. Phase 10 or earlier?
-5. **Damage diagram interactive UI** — assessor clicks numbered panels on an SVG car overlay. Build as part of Phase 3? Default: yes.
-6. **Default admin credentials** — auto-generate on first run and display in console, or seed a known credential? Default: auto-generate.
-7. **Multi-tenancy readiness** — design schema with `TenantId` from day 1 (nullable, all "default tenant" for now) to allow SaaS later? Default: no, single-tenant only — keep schema simple.
+### Still open
+1. **`PartCatalog` entity** — the hierarchical parts taxonomy from `ΜΕΡΗ ΑΥΤΟΚΙΝΗΤΟΥ.docx` is not modelled. Decide whether the autocomplete catalog adds enough value to justify the entity + seed.
+2. **`AuditLog` writer** — entity is in the schema but the EF interceptor only stamps `Created/UpdatedAt/By`. The PII-read audit promised in §6 is not enforced.
+3. **Account management UI** — Identity supports password reset / email confirmation / lockout / MFA but no pages exist beyond Login + Logout. No staff/user admin page either.
+4. **Portal project split** — the standalone `Workshop.Portal.*` and `Workshop.Api` projects are reserved scaffolds. Portal UIs currently live inside `Workshop.Web`. Decide whether to split or delete.
 
 ---
 
-## 9. Phase deliverables (rolled forward from earlier plan)
+## 9. Phase deliverables
 
-| Phase | Deliverable |
-|---|---|
-| **0** | Solution + 8 projects scaffolded; EF Core DbContext with all entities from Section 4; Identity with 4 portal audiences; bilingual resource files; MudBlazor theme; workflow state machine class + unit tests; Docker compose for Postgres; seed runner |
-| **1** | Reference data CRUD: Customers, Vehicles, Branches, Insurance Companies, Assessors, Adjusters, Suppliers; seed catalogs (BodyPanel, ServiceCatalog, PartCatalog) |
-| **2** | InsuranceCase CRUD + state machine wired to UI; CaseEvent history |
-| **3** | Assessment + Damage diagram (clickable SVG with BodyPanel overlay) + WorkItems grid with allowed-ops validation |
-| **4** | Insurance Approval flow; Customer Assignment; first end-to-end insurance case path |
-| **5** | Parts module: PartLine CRUD, branch routing, multi-state receipt, warehouse + storage location, supplier portal MVP |
-| **6** | Repair scheduling, technician assignment, intermediate inspection, completion photos |
-| **7** | Documents + Photos (all entities, all phases) |
-| **8** | Settlement + Payment + Case Closure; Quote PDF generation matching Paint Bull's existing format (images 5–6) |
-| **9** | Retail flow (RetailCase, RetailPartLine, RetailRepair, RetailPayment) |
-| **10** | Reporting dashboards (per branch, aging, parts cost vs approved); Customer + Insurance + Supplier portal UIs |
-| **11** | Greek myDATA integration; SMS/email customer notifications; advanced reports |
+All eleven phases have shipped. External-integration items in phases 5, 7, and 11 ship as abstractions + logging/stub adapters — see §1 for the swap-in points.
+
+| Phase | Status | Deliverable |
+|---|---|---|
+| **0** | ✅ | Solution + 8 projects scaffolded; EF Core DbContext with all entities from §4; Identity with 4 portal audiences; bilingual resource files; MudBlazor theme; workflow state machine + unit tests; Docker compose; seed runner |
+| **1** | ✅ | Reference data CRUD: Customers, Vehicles, Branches, Insurance Companies, Assessors, Adjusters, Suppliers; seed catalogs (BodyPanel, ServiceCatalog) — `PartCatalog` deferred (see §8) |
+| **2** | ✅ | InsuranceCase CRUD + state machine wired to UI; `CaseEvent` history |
+| **3** | ✅ | Assessment + clickable SVG damage diagram + WorkItems grid with allowed-ops validation |
+| **4** | ✅ | Insurance Approval flow; Customer Assignment; first end-to-end insurance path |
+| **5** | ✅ | Parts module: PartLine CRUD, branch routing, multi-state receipt, warehouse + storage location, supplier portal pages |
+| **6** | ✅ | Repair scheduling, technician assignment, intermediate inspection, completion photos |
+| **7** | ✅ | Documents + Photos (Assessment / Repair / RetailRepair) |
+| **8** | ✅ | Settlement + Payment + Case Closure; Quote PDF generation (Invoice / Receipt / Case Form templates still TODO) |
+| **9** | ✅ | Retail flow (RetailCase, RetailPartLine, RetailRepair, RetailCasePanel, RetailPayment) |
+| **10** | ✅ | Dashboard KPIs on Home; `/reports` page with branch breakdown, aging, parts variance, technician productivity. Customer / Insurer / Supplier portal UIs are served inside `Workshop.Web` rather than the standalone projects |
+| **11** | ✅ stubs | `IEmailSender` / `ISmsSender` / `IMyDataClient` abstractions + logging stub adapters; in-app notification bell; `SubmitQuoteToMyDataCommand` |
 
 ---
 

@@ -29,7 +29,7 @@ public class PaymentHandlersTests
         await using var db = TestDb.NewContext();
         var caseId = await SeedCaseWithApprovedAmountAsync(db, approvedAmount: 1000m);
 
-        var create = new CreatePaymentHandler(db);
+        var create = new CreatePaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await create.Handle(new CreatePaymentCommand(caseId, new CreatePaymentDto(
             400m, DateOnly.FromDateTime(DateTime.Today), PaymentMethod.BankTransfer,
             "Acme insurance", "REF-1", null)), default);
@@ -50,7 +50,7 @@ public class PaymentHandlersTests
     {
         await using var db = TestDb.NewContext();
         var caseId = await SeedCaseWithApprovedAmountAsync(db, approvedAmount: 500m);
-        await new CreatePaymentHandler(db).Handle(new CreatePaymentCommand(caseId,
+        await new CreatePaymentHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new CreatePaymentCommand(caseId,
             new CreatePaymentDto(500m, DateOnly.FromDateTime(DateTime.Today),
                 PaymentMethod.InsurancePayout, "Acme", null, null)), default);
 

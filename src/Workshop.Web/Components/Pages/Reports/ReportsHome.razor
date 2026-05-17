@@ -1,0 +1,183 @@
+@page "/reports"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Dashboard
+@inject IMediator Mediator
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["Reports"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-2">@L["Reports"]</MudText>
+<MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">@L["ReportsSubtitle"]</MudText>
+
+<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true">
+
+    <MudTabPanel Text="@L["BranchBreakdown"]" Icon="@Icons.Material.Filled.Business">
+        <MudPaper Class="pa-3 mt-3" Elevation="0" Outlined="true">
+            @if (_branches is null)
+            {
+                <MudProgressLinear Indeterminate />
+            }
+            else if (_branches.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+            }
+            else
+            {
+                <MudTable T="BranchBreakdownRow" Items="_branches" Dense Hover Striped>
+                    <HeaderContent>
+                        <MudTh>@L["Branch"]</MudTh>
+                        <MudTh Style="text-align:right">@L["InsuranceCasesShort"]</MudTh>
+                        <MudTh Style="text-align:right">@L["RetailCasesShort"]</MudTh>
+                        <MudTh Style="text-align:right">@L["RepairsInProgress"]</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.BranchName</MudTd>
+                        <MudTd Style="text-align:right">@context.InsuranceCases</MudTd>
+                        <MudTd Style="text-align:right">@context.RetailCases</MudTd>
+                        <MudTd Style="text-align:right">@context.RepairsInProgress</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@L["CaseAging"]" Icon="@Icons.Material.Filled.Schedule">
+        <MudPaper Class="pa-3 mt-3" Elevation="0" Outlined="true">
+            @if (_aging is null)
+            {
+                <MudProgressLinear Indeterminate />
+            }
+            else
+            {
+                <MudTable T="AgingBucketRow" Items="_aging" Dense Hover Striped>
+                    <HeaderContent>
+                        <MudTh>@L["AgeRange"]</MudTh>
+                        <MudTh Style="text-align:right">@L["InsuranceCasesShort"]</MudTh>
+                        <MudTh Style="text-align:right">@L["RetailCasesShort"]</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.BucketLabel</MudTd>
+                        <MudTd Style="text-align:right">@context.InsuranceCases</MudTd>
+                        <MudTd Style="text-align:right">@context.RetailCases</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@L["PartsVariance"]" Icon="@Icons.Material.Filled.TrendingUp">
+        <MudPaper Class="pa-3 mt-3" Elevation="0" Outlined="true">
+            @if (_variance is null)
+            {
+                <MudProgressLinear Indeterminate />
+            }
+            else if (_variance.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+            }
+            else
+            {
+                <MudTable T="PartsVarianceRow" Items="_variance" Dense Hover Striped>
+                    <HeaderContent>
+                        <MudTh>@L["CaseNumber"]</MudTh>
+                        <MudTh Style="text-align:right">@L["ApprovedAmount"]</MudTh>
+                        <MudTh Style="text-align:right">@L["PartsCost"]</MudTh>
+                        <MudTh Style="text-align:right">@L["Variance"]</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudLink Href="@($"/cases/insurance/{context.InsuranceCaseId}")">@context.CaseNumber</MudLink>
+                        </MudTd>
+                        <MudTd Style="text-align:right">@context.ApprovedAmount.ToString("N2") €</MudTd>
+                        <MudTd Style="text-align:right">@context.PartsCost.ToString("N2") €</MudTd>
+                        <MudTd Style="@VarianceStyle(context.Variance)">@context.Variance.ToString("N2") €</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@L["TechnicianProductivity"]" Icon="@Icons.Material.Filled.Engineering">
+        <MudPaper Class="pa-3 mt-3" Elevation="0" Outlined="true">
+            <MudSelect T="int" @bind-Value="_techPeriod" Label="@L["Period"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                       Style="max-width:200px" Class="mb-3" Dense>
+                <MudSelectItem Value="7">7</MudSelectItem>
+                <MudSelectItem Value="30">30</MudSelectItem>
+                <MudSelectItem Value="90">90</MudSelectItem>
+                <MudSelectItem Value="180">180</MudSelectItem>
+            </MudSelect>
+            @if (_technicians is null)
+            {
+                <MudProgressLinear Indeterminate />
+            }
+            else if (_technicians.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+            }
+            else
+            {
+                <MudTable T="TechnicianProductivityRow" Items="_technicians" Dense Hover Striped>
+                    <HeaderContent>
+                        <MudTh>@L["Technician"]</MudTh>
+                        <MudTh Style="text-align:right">@L["Completed"]</MudTh>
+                        <MudTh Style="text-align:right">@L["InProgress"]</MudTh>
+                        <MudTh Style="text-align:right">@L["AvgCompletionDays"]</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.TechnicianName</MudTd>
+                        <MudTd Style="text-align:right">@context.RepairsCompleted</MudTd>
+                        <MudTd Style="text-align:right">@context.RepairsInProgress</MudTd>
+                        <MudTd Style="text-align:right">@(context.AvgCompletionDays?.ToString("N1") ?? "—")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudTabPanel>
+
+</MudTabs>
+
+@code {
+    private IReadOnlyList<BranchBreakdownRow>? _branches;
+    private IReadOnlyList<AgingBucketRow>? _aging;
+    private IReadOnlyList<PartsVarianceRow>? _variance;
+    private IReadOnlyList<TechnicianProductivityRow>? _technicians;
+
+    private int _techPeriodValue = 30;
+    private int _techPeriod
+    {
+        get => _techPeriodValue;
+        set
+        {
+            if (_techPeriodValue == value) return;
+            _techPeriodValue = value;
+            _ = LoadTechniciansAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var branchesTask = Mediator.Send(new GetBranchBreakdownQuery());
+        var agingTask = Mediator.Send(new GetAgingBucketsQuery());
+        var varianceTask = Mediator.Send(new GetPartsVarianceQuery());
+        await LoadTechniciansAsync();
+
+        _branches = await branchesTask;
+        _aging = await agingTask;
+        _variance = await varianceTask;
+    }
+
+    private async Task LoadTechniciansAsync()
+    {
+        _technicians = null;
+        StateHasChanged();
+        _technicians = await Mediator.Send(new GetTechnicianProductivityQuery(_techPeriodValue));
+        StateHasChanged();
+    }
+
+    private static string VarianceStyle(decimal variance)
+        => variance > 0
+            ? "text-align:right; color:var(--mud-palette-error)"
+            : "text-align:right; color:var(--mud-palette-success)";
+}

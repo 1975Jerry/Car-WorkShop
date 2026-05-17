@@ -35,7 +35,7 @@ public class QuotePdfGeneratorTests
         var user = new TestCurrentUser();
 
         // Issue a quote via the real handler (which calls the generator).
-        var quoteHandler = new IssueQuoteHandler(db, user, TimeProvider.System, pdf);
+        var quoteHandler = new IssueQuoteHandler(db, user, TimeProvider.System, pdf, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         var quoteId = await quoteHandler.Handle(new IssueQuoteCommand(caseId), default);
 
         // Quote.PdfPath should be set to a non-empty path.

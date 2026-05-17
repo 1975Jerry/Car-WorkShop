@@ -13,7 +13,7 @@ public class RepairHandlersTests
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
         var techId = Guid.CreateVersion7();
 
-        var handler = new UpsertRepairScheduleHandler(db);
+        var handler = new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         var id = await handler.Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(
                 DateOnly.FromDateTime(DateTime.Today.AddDays(2)),
@@ -31,7 +31,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        var handler = new UpsertRepairScheduleHandler(db);
+        var handler = new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
 
         var firstTech = Guid.CreateVersion7();
         var secondTech = Guid.CreateVersion7();
@@ -52,7 +52,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        var handler = new UpsertRepairScheduleHandler(db);
+        var handler = new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await handler.Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, Guid.CreateVersion7(), null)), default);
@@ -72,7 +72,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        await new UpsertRepairScheduleHandler(db).Handle(new UpsertRepairScheduleCommand(caseId,
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, TechnicianId: null, null)), default);
 
@@ -86,7 +86,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        await new UpsertRepairScheduleHandler(db).Handle(new UpsertRepairScheduleCommand(caseId,
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, Guid.CreateVersion7(), null)), default);
 
@@ -103,7 +103,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        await new UpsertRepairScheduleHandler(db).Handle(new UpsertRepairScheduleCommand(caseId,
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, Guid.CreateVersion7(), null)), default);
 
@@ -117,7 +117,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        await new UpsertRepairScheduleHandler(db).Handle(new UpsertRepairScheduleCommand(caseId,
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, Guid.CreateVersion7(), null)), default);
         await new StartRepairHandler(db, TimeProvider.System).Handle(
@@ -136,7 +136,7 @@ public class RepairHandlersTests
     {
         await using var db = TestDb.NewContext();
         var (caseId, _, _) = await AssessmentHandlersTests.SeedCaseWithPanelsAsync(db);
-        await new UpsertRepairScheduleHandler(db).Handle(new UpsertRepairScheduleCommand(caseId,
+        await new UpsertRepairScheduleHandler(db, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(new UpsertRepairScheduleCommand(caseId,
             new UpsertRepairScheduleDto(DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 null, Guid.CreateVersion7(), null)), default);
 

@@ -84,7 +84,7 @@ public class SupplierPortalHandlersTests
         var (supA, _, insLine, _) = await SeedTwoSuppliersAsync(db);
 
         // Move one to Ordered, leave the retail line Pending.
-        await new SupplierDispatchHandler(db, TimeProvider.System).Handle(
+        await new SupplierDispatchHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new SupplierDispatchCommand(supA, insLine, SupplierLineKind.Insurance, PartReceivedStatus.Ordered),
             default);
 
@@ -102,7 +102,7 @@ public class SupplierPortalHandlersTests
         await using var db = TestDb.NewContext();
         var (supA, _, insLine, _) = await SeedTwoSuppliersAsync(db);
 
-        var h = new SupplierDispatchHandler(db, TimeProvider.System);
+        var h = new SupplierDispatchHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients());
         await h.Handle(new SupplierDispatchCommand(supA, insLine, SupplierLineKind.Insurance,
             PartReceivedStatus.Ordered), default);
         await h.Handle(new SupplierDispatchCommand(supA, insLine, SupplierLineKind.Insurance,
@@ -121,7 +121,7 @@ public class SupplierPortalHandlersTests
         await using var db = TestDb.NewContext();
         var (supA, _, _, retLine) = await SeedTwoSuppliersAsync(db);
 
-        await new SupplierDispatchHandler(db, TimeProvider.System).Handle(
+        await new SupplierDispatchHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new SupplierDispatchCommand(supA, retLine, SupplierLineKind.Retail,
                 PartReceivedStatus.Ordered), default);
 
@@ -136,12 +136,12 @@ public class SupplierPortalHandlersTests
         var (supA, _, insLine, _) = await SeedTwoSuppliersAsync(db);
 
         // Move to Ordered first so that Pending→Received transition rule wouldn't be the failure trigger.
-        await new SupplierDispatchHandler(db, TimeProvider.System).Handle(
+        await new SupplierDispatchHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
             new SupplierDispatchCommand(supA, insLine, SupplierLineKind.Insurance,
                 PartReceivedStatus.Ordered), default);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            new SupplierDispatchHandler(db, TimeProvider.System).Handle(
+            new SupplierDispatchHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
                 new SupplierDispatchCommand(supA, insLine, SupplierLineKind.Insurance,
                     PartReceivedStatus.Received), default));
         Assert.Contains("workshop", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -154,7 +154,7 @@ public class SupplierPortalHandlersTests
         var (_, supB, insLine, _) = await SeedTwoSuppliersAsync(db);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            new SupplierDispatchHandler(db, TimeProvider.System).Handle(
+            new SupplierDispatchHandler(db, TimeProvider.System, new FakeNotificationDispatcher(), new FakeCaseNotificationRecipients()).Handle(
                 new SupplierDispatchCommand(supB, insLine, SupplierLineKind.Insurance,
                     PartReceivedStatus.Ordered), default));
     }

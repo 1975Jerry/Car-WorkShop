@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
+using Workshop.Application.Common.Notifications;
 using Workshop.Domain.Entities.CrossCutting;
 using Workshop.Domain.Enums;
 using Workshop.Domain.Workflows;
@@ -83,7 +84,9 @@ public class TransitionInsuranceCaseHandler(
     IWorkshopDbContext db,
     ICaseGuardContextBuilder ctxBuilder,
     ICurrentUserService currentUser,
-    TimeProvider clock)
+    TimeProvider clock,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<TransitionInsuranceCaseCommand>
 {
     public async Task Handle(TransitionInsuranceCaseCommand cmd, CancellationToken ct)
@@ -118,5 +121,57 @@ public class TransitionInsuranceCaseHandler(
         });
 
         await db.SaveChangesAsync(ct);
+
+        await NotifyAsync(entity, from, sm.State, ct);
     }
+
+    private async Task NotifyAsync(Domain.Entities.Insurance.InsuranceCase entity, InsuranceCaseStatus from, InsuranceCaseStatus to, CancellationToken ct)
+    {
+        // Pick audience by the new status: keep the customer informed at every customer-facing
+        // step, ping insurer reviewers when the file is in their hands, and ping suppliers
+        // when parts ordering opens.
+        var audiences = to switch
+        {
+            InsuranceCaseStatus.InsuranceApproval => CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff | CaseAudienceFlags.InsuranceReviewers,
+            InsuranceCaseStatus.CustomerAssignment => CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            InsuranceCaseStatus.PartsApprovalAndOrder => CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff | CaseAudienceFlags.Suppliers,
+            InsuranceCaseStatus.RepairScheduling
+                or InsuranceCaseStatus.RepairInProgress
+                or InsuranceCaseStatus.RepairCompleted
+                or InsuranceCaseStatus.Settlement
+                or InsuranceCaseStatus.PaymentConfirmed
+                or InsuranceCaseStatus.CaseClosed => CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            _ => CaseAudienceFlags.AssignedStaff,
+        };
+
+        var to_recipients = await recipients.ResolveAsync(entity.Id, null, audiences, ct);
+        if (to_recipients.Count == 0)
+            return;
+
+        await notifications.DispatchAsync(new NotificationRequest(
+            Kind: NotificationKind.CaseStatusChanged,
+            TitleGr: $"Φάκελος {entity.CaseNumber}: {StatusLabelGr(to)}",
+            TitleEn: $"Case {entity.CaseNumber}: {to}",
+            BodyGr: $"Ο φάκελος προχώρησε από «{StatusLabelGr(from)}» σε «{StatusLabelGr(to)}».",
+            BodyEn: $"Case moved from {from} to {to}.",
+            Url: $"/cases/insurance/{entity.Id}",
+            Recipients: to_recipients), ct);
+    }
+
+    private static string StatusLabelGr(InsuranceCaseStatus s) => s switch
+    {
+        InsuranceCaseStatus.NewCase => "Νέος Φάκελος",
+        InsuranceCaseStatus.AssessorAppointment => "Ραντεβού Πραγματογνώμονα",
+        InsuranceCaseStatus.Assessment => "Πραγματογνωμοσύνη",
+        InsuranceCaseStatus.InsuranceApproval => "Έγκριση Ασφαλιστικής",
+        InsuranceCaseStatus.CustomerAssignment => "Εκχώρηση Πελάτη",
+        InsuranceCaseStatus.PartsApprovalAndOrder => "Έγκριση & Παραγγελία Ανταλλακτικών",
+        InsuranceCaseStatus.RepairScheduling => "Προγραμματισμός Επισκευής",
+        InsuranceCaseStatus.RepairInProgress => "Επισκευή σε Εξέλιξη",
+        InsuranceCaseStatus.RepairCompleted => "Ολοκλήρωση Επισκευής",
+        InsuranceCaseStatus.Settlement => "Εξοφλητική",
+        InsuranceCaseStatus.PaymentConfirmed => "Επιβεβαίωση Πληρωμής",
+        InsuranceCaseStatus.CaseClosed => "Κλείσιμο Φακέλου",
+        _ => s.ToString(),
+    };
 }

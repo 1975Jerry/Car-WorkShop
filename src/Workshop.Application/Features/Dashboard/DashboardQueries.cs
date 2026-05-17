@@ -416,3 +416,70 @@ public class GetPartsVarianceHandler(IWorkshopDbContext db)
             .ToList();
     }
 }
+
+public record GetTechnicianProductivityQuery(int PeriodDays = 30) : IRequest<IReadOnlyList<TechnicianProductivityRow>>;
+
+public class GetTechnicianProductivityHandler(IWorkshopDbContext db, TimeProvider clock)
+    : IRequestHandler<GetTechnicianProductivityQuery, IReadOnlyList<TechnicianProductivityRow>>
+{
+    public async Task<IReadOnlyList<TechnicianProductivityRow>> Handle(GetTechnicianProductivityQuery q, CancellationToken ct)
+    {
+        var days = Math.Clamp(q.PeriodDays, 1, 365);
+        var since = clock.GetUtcNow().UtcDateTime.AddDays(-days);
+
+        // Insurance repairs only have a meaningful technician assignment — retail repair
+        // technician is optional and many records skip it. Aggregate over both, treating
+        // null technicians as "Unassigned" so the row totals reconcile with the dashboard.
+        var insurance = await db.Repairs.AsNoTracking()
+            .Where(r => r.StartDate != null && r.StartDate >= since)
+            .Select(r => new
+            {
+                r.TechnicianId,
+                r.Status,
+                r.StartDate,
+                r.CompletionDate,
+            })
+            .ToListAsync(ct);
+
+        var retail = await db.RetailRepairs.AsNoTracking()
+            .Where(r => r.StartDate != null && r.StartDate >= since)
+            .Select(r => new
+            {
+                r.TechnicianId,
+                r.Status,
+                r.StartDate,
+                r.CompletionDate,
+            })
+            .ToListAsync(ct);
+
+        var combined = insurance.Concat(retail).ToList();
+        var technicianIds = combined
+            .Where(r => r.TechnicianId.HasValue)
+            .Select(r => r.TechnicianId!.Value)
+            .Distinct()
+            .ToList();
+
+        var names = technicianIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await db.Users.AsNoTracking()
+                .Where(u => technicianIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.FullName, ct);
+
+        return combined
+            .GroupBy(r => r.TechnicianId)
+            .Select(g =>
+            {
+                var completed = g.Where(r => r.Status == RepairStatus.Completed && r.CompletionDate.HasValue && r.StartDate.HasValue).ToList();
+                var inProgress = g.Count(r => r.Status == RepairStatus.InProgress);
+                double? avgDays = completed.Count == 0
+                    ? null
+                    : completed.Average(r => (r.CompletionDate!.Value - r.StartDate!.Value).TotalDays);
+                var techId = g.Key ?? Guid.Empty;
+                var name = g.Key.HasValue ? names.GetValueOrDefault(g.Key.Value, "—") : "—";
+                return new TechnicianProductivityRow(techId, name, completed.Count, inProgress, avgDays);
+            })
+            .OrderByDescending(r => r.RepairsCompleted)
+            .ThenBy(r => r.TechnicianName)
+            .ToList();
+    }
+}

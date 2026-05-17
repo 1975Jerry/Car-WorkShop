@@ -50,3 +50,10 @@ public record PartsVarianceRow(
     decimal ApprovedAmount,
     decimal PartsCost,
     decimal Variance);
+
+public record TechnicianProductivityRow(
+    Guid TechnicianId,
+    string TechnicianName,
+    int RepairsCompleted,
+    int RepairsInProgress,
+    double? AvgCompletionDays);

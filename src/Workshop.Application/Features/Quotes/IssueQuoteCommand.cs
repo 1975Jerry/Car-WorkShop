@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
+using Workshop.Application.Common.Notifications;
 using Workshop.Application.Common.Pdf;
 using Workshop.Domain.Entities.Insurance;
 
@@ -17,7 +18,9 @@ public class IssueQuoteHandler(
     IWorkshopDbContext db,
     ICurrentUserService user,
     TimeProvider clock,
-    IQuotePdfGenerator pdf)
+    IQuotePdfGenerator pdf,
+    INotificationDispatcher notifications,
+    ICaseNotificationRecipients recipients)
     : IRequestHandler<IssueQuoteCommand, Guid>
 {
     public async Task<Guid> Handle(IssueQuoteCommand cmd, CancellationToken ct)
@@ -96,6 +99,22 @@ public class IssueQuoteHandler(
         // Render PDF after the Quote row exists so the generator can read it back.
         quote.PdfPath = await pdf.GenerateAsync(quote.Id, ct);
         await db.SaveChangesAsync(ct);
+
+        var to = await recipients.ResolveAsync(
+            cmd.InsuranceCaseId, null,
+            CaseAudienceFlags.Customer | CaseAudienceFlags.AssignedStaff,
+            ct);
+        if (to.Count > 0)
+        {
+            await notifications.DispatchAsync(new NotificationRequest(
+                Kind: NotificationKind.QuoteIssued,
+                TitleGr: $"Νέα Προσφορά {quote.QuoteNumber}",
+                TitleEn: $"New quote {quote.QuoteNumber}",
+                BodyGr: $"Εκδόθηκε προσφορά συνολικού ποσού {quote.Total:N2} €.",
+                BodyEn: $"Quote issued, total {quote.Total:N2} €.",
+                Url: $"/cases/insurance/{cmd.InsuranceCaseId}",
+                Recipients: to), ct);
+        }
 
         return quote.Id;
     }

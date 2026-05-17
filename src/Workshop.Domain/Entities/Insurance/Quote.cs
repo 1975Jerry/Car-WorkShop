@@ -23,4 +23,7 @@ public class Quote : Entity
     public string? Notes { get; set; }
     public string? PdfPath { get; set; }
     public bool IsCurrent { get; set; }
+
+    public string? MyDataMark { get; set; }
+    public DateTime? MyDataSubmittedAt { get; set; }
 }

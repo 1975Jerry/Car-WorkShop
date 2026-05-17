@@ -1,0 +1,99 @@
+@using MediatR
+@using Workshop.Application.Features.Notifications
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudMenu Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight"
+         TransformOrigin="Origin.TopRight" PopoverClass="notification-popover"
+         @bind-Open="_open">
+    <ActivatorContent>
+        <MudBadge Content="@_inbox.UnreadCount" Color="Color.Error" Overlap Visible="@(_inbox.UnreadCount > 0)" Max="99">
+            <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
+        </MudBadge>
+    </ActivatorContent>
+    <ChildContent>
+        <MudPaper Class="pa-0" Elevation="0" Style="width: 360px;">
+            <div class="d-flex align-center px-3 py-2">
+                <MudText Typo="Typo.subtitle2" Class="flex-grow-1">@L["Notifications"]</MudText>
+                @if (_inbox.UnreadCount > 0)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="MarkAllReadAsync">@L["MarkAllRead"]</MudButton>
+                }
+            </div>
+            <MudDivider />
+            @if (_inbox.Recent.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Class="pa-4" Color="Color.Secondary">@L["NoNotifications"]</MudText>
+            }
+            else
+            {
+                <MudList T="Guid" Dense Class="py-0" Style="max-height: 420px; overflow-y: auto;">
+                    @foreach (var n in _inbox.Recent)
+                    {
+                        <MudListItem T="Guid" Value="@n.Id" OnClick="@(() => OnItemClick(n))"
+                                     Class="@(n.IsRead ? "notif-read" : "notif-unread")">
+                            <div class="d-flex flex-column">
+                                <MudText Typo="Typo.body2"><b>@n.Title</b></MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@n.Body</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Tertiary">@n.OccurredAt.ToLocalTime().ToString("dd/MM HH:mm")</MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+        </MudPaper>
+    </ChildContent>
+</MudMenu>
+
+<style>
+    .notif-unread { background-color: rgba(33, 150, 243, 0.06); }
+    .notif-read { opacity: 0.85; }
+    .notification-popover .mud-paper { padding: 0; }
+</style>
+
+@code {
+    private NotificationInboxDto _inbox = new(0, Array.Empty<NotificationListItemDto>());
+    private bool _open;
+    private System.Threading.Timer? _poll;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        _poll = new System.Threading.Timer(async _ => await InvokeAsync(RefreshAsync), null,
+            TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            _inbox = await Mediator.Send(new GetMyNotificationInboxQuery());
+            StateHasChanged();
+        }
+        catch
+        {
+            // ignore — bell is best-effort
+        }
+    }
+
+    private async Task OnItemClick(NotificationListItemDto n)
+    {
+        if (!n.IsRead)
+        {
+            await Mediator.Send(new MarkNotificationReadCommand(n.Id));
+            await RefreshAsync();
+        }
+        _open = false;
+        if (!string.IsNullOrEmpty(n.Url))
+            Nav.NavigateTo(n.Url);
+    }
+
+    private async Task MarkAllReadAsync()
+    {
+        await Mediator.Send(new MarkAllNotificationsReadCommand());
+        await RefreshAsync();
+    }
+
+    public void Dispose() => _poll?.Dispose();
+}

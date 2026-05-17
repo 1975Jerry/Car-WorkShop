@@ -56,11 +56,13 @@ Open `https://localhost:5001` (port varies — check console output).
 
 ### 4. Other apps
 
+The customer, insurer, and supplier portals are currently served inside `Workshop.Web` under `/portal`, `/insurer`, and `/supplier` routes — sign in as a user with the matching `PortalAudience`. The standalone projects below are reserved scaffolds for the eventual split (see *Known issues* below).
+
 ```bash
-dotnet run --project src/Workshop.Api               # REST API for external portals
-dotnet run --project src/Workshop.Portal.Customer   # Customer portal
-dotnet run --project src/Workshop.Portal.Insurance  # Insurance reviewer portal
-dotnet run --project src/Workshop.Portal.Supplier   # Supplier portal
+dotnet run --project src/Workshop.Api               # placeholder REST API (stub endpoints only)
+dotnet run --project src/Workshop.Portal.Customer   # scaffold — not yet implemented
+dotnet run --project src/Workshop.Portal.Insurance  # scaffold — not yet implemented
+dotnet run --project src/Workshop.Portal.Supplier   # scaffold — not yet implemented
 ```
 
 ## Common tasks
@@ -69,8 +71,10 @@ dotnet run --project src/Workshop.Portal.Supplier   # Supplier portal
 # Build all
 dotnet build CARWorshoNew.slnx
 
-# Run unit tests (state machine + future application tests)
-dotnet test
+# Run unit tests — xUnit v3 runs via `dotnet run`, not `dotnet test`.
+# `dotnet test` reports zero tests because of the xUnit v3 Microsoft Testing Platform integration.
+dotnet run --project tests/Workshop.Domain.Tests
+dotnet run --project tests/Workshop.Application.Tests
 
 # Add a new EF migration
 dotnet ef migrations add <Name> \
@@ -87,15 +91,15 @@ dotnet ef database update \
 | Project | Role |
 |---|---|
 | `Workshop.Domain` | Entities, enums, value objects, `InsuranceCaseStateMachine` |
-| `Workshop.Application` | Use cases, validators, DTOs (Phase 1+) |
-| `Workshop.Infrastructure` | EF Core `WorkshopDbContext`, Identity, file storage, seed runner |
-| `Workshop.Web` | Main Blazor Server staff app — MudBlazor + i18n (EL/EN) |
-| `Workshop.Portal.Customer` | Customer self-service portal |
-| `Workshop.Portal.Insurance` | Insurance company reviewer portal |
-| `Workshop.Portal.Supplier` | Supplier order portal |
-| `Workshop.Api` | Shared REST API for the 3 external portals |
-| `tests/Workshop.Domain.Tests` | xUnit 3 tests — state machine (14 passing) |
-| `tests/Workshop.Application.Tests` | Application use-case tests (Phase 1+) |
+| `Workshop.Application` | Use cases, validators, DTOs, notification + myDATA abstractions |
+| `Workshop.Infrastructure` | EF Core `WorkshopDbContext`, Identity, file storage, seed runner, stub adapters (email/SMS/myDATA) |
+| `Workshop.Web` | Main Blazor Server app — staff UI plus the customer (`/portal`), insurer (`/insurer`), and supplier (`/supplier`) portals |
+| `Workshop.Portal.Customer` | Reserved scaffold for the eventual customer-portal split |
+| `Workshop.Portal.Insurance` | Reserved scaffold for the eventual insurer-portal split |
+| `Workshop.Portal.Supplier` | Reserved scaffold for the eventual supplier-portal split |
+| `Workshop.Api` | Reserved scaffold for the eventual external REST API |
+| `tests/Workshop.Domain.Tests` | xUnit v3 tests — state machine (14) |
+| `tests/Workshop.Application.Tests` | xUnit v3 tests — application use cases, dispatchers, myDATA (157) |
 
 ## Configuration
 
@@ -110,13 +114,30 @@ export WORKSHOP_CONNECTION_STRING="Host=...;Port=...;Database=...;Username=...;P
 
 ## Phase status
 
-**Phase 0 ✅ scaffold complete** — solution, schema, state machine, MudBlazor theme, EL/EN resources, seed runner.
+All 11 phases from [DOMAIN-MODEL.md §9](DOMAIN-MODEL.md) are in. External-integration phases ship as abstractions with logging/stub adapters — swap the DI registrations in `Workshop.Infrastructure/DependencyInjection.cs` to plug real providers.
 
-Next: **Phase 1** — reference data CRUD (Customers, Vehicles, Branches, Insurance Companies, etc.).
-See [DOMAIN-MODEL.md §9](DOMAIN-MODEL.md) for the full phase plan.
+| Phase | Status | Notes |
+|---|---|---|
+| 0 — Scaffold, schema, state machine, seed | ✅ | |
+| 1 — Reference data CRUD | ✅ | Customers, Vehicles, Branches, Insurance Companies, Assessors, Adjusters, Suppliers |
+| 2 — InsuranceCase + state machine UI | ✅ | |
+| 3 — Assessment + clickable SVG damage diagram + WorkItems | ✅ | |
+| 4 — Insurance Approval + Customer Assignment | ✅ | |
+| 5 — Parts module + Supplier portal | ✅ | Multi-state receipt, branch routing, warehouse |
+| 6 — Repair scheduling, technician, completion | ✅ | |
+| 7 — Documents + Photos | ✅ | Photos cover Assessment / Repair / RetailRepair |
+| 8 — Settlement + Payment + Quote PDF | ✅ | QuestPDF; only Quote template — Invoice/Receipt PDFs pending |
+| 9 — Retail flow | ✅ | Parallel aggregate to Insurance |
+| 10 — Dashboard / reports | ✅ | KPIs on Home; `/reports` for branch breakdown, aging, parts variance, technician productivity |
+| 11 — Notifications, myDATA, reports | ✅ stubs | Logging email/SMS senders + stub `IMyDataClient`; in-app bell wired |
 
 ## Known issues / tech debt
 
-- Stateless `PermittedTriggers` is marked obsolete — migrate to `PermittedTriggersAsync` later.
-- Greek myDATA invoicing integration is Phase 11.
-- Damage diagram interactive SVG (clickable panel selector) is Phase 3.
+- **Standalone portal projects + `Workshop.Api` are scaffolds.** Portal UIs live inside `Workshop.Web`; the four side projects are reserved for the eventual split + external-token REST API.
+- **External integrations are stubs.** `IEmailSender`, `ISmsSender`, `IMyDataClient`, and `IFileStore` need real adapters (SMTP/SendGrid, Twilio/Vonage, AADE sandbox, S3/Azure Blob).
+- **No background-job runner.** Hangfire is listed in the stack but not wired — needed for reminders (vehicle insurance expiration), notification batching, and scheduled myDATA submissions.
+- **Account management is bare.** Only login/logout pages exist — no password reset, email confirmation, MFA enrolment, profile, or staff/user admin page. Identity tables already carry the columns.
+- **Audit gap.** `AuditLog` entity exists and is in the schema, but `AuditSaveChangesInterceptor` only stamps `Created/UpdatedAt/By` — it does not write `AuditLog` rows yet. Only `CaseEvent` (workflow transitions) is audited.
+- **`PartCatalog` not modelled.** The hierarchical parts taxonomy from `ΜΕΡΗ ΑΥΤΟΚΙΝΗΤΟΥ.docx` (~400 rows) is not seeded — `PartLine.PartName` remains free-text.
+- **Only the Quote PDF template exists.** Invoice / Receipt / Case Form / Insurance Form PDFs referenced by `DocumentType` are upload-only today.
+- **Stateless `PermittedTriggers` is obsolete.** Migrate to `PermittedTriggersAsync`.

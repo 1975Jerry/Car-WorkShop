@@ -97,8 +97,8 @@ public class GetWarehouseLookupHandler(IWorkshopDbContext db)
 /// Active staff users — used today for technician assignment on a Repair. The full
 /// "users currently in the Technician role" filter belongs in Identity, but the
 /// schema doesn't expose AspNetUserRoles cleanly from Application; for now the
-/// lookup returns all active staff and we let the manager pick. Tighten in Phase 10
-/// when the staff-role admin surface lands.
+/// lookup returns all active staff and we let the manager pick. Tighten when the
+/// staff-role admin UI lands (see DOMAIN-MODEL.md §8 — "Account management UI").
 /// </summary>
 public record GetStaffUserLookupQuery(Guid? BranchId = null) : IRequest<IReadOnlyList<LookupItem>>;
 

@@ -22,8 +22,10 @@ public class Program
         app.UseHttpsRedirection();
         app.UseAuthorization();
 
-        // External portal endpoints — fleshed out in their respective phases (4 / 5 / 10).
-        app.MapGet("/health", () => Results.Ok(new { status = "ok", phase = 0 }));
+        // This project is a reserved scaffold for the eventual REST-API split.
+        // External portal flows currently run inside Workshop.Web; the endpoints
+        // below are placeholders so the project still compiles + responds to /health.
+        app.MapGet("/health", () => Results.Ok(new { status = "ok", scaffold = true }));
         app.MapGet("/api/v1/cases", () => Results.Ok(Array.Empty<object>()))
            .RequireAuthorization();
         app.MapGet("/api/v1/parts", () => Results.Ok(Array.Empty<object>()))
