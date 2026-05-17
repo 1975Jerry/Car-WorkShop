@@ -491,6 +491,80 @@ public partial class SeedRunner
         return list;
     }
 
+    // Idempotent backfill: ensures each demo customer has 2-3 vehicles so the
+    // /vehicles list shows realistic variety. Existing cases keep their original
+    // vehicle FK — we only add, never reassign.
+    private async Task ExpandDemoVehicleFleetAsync(CancellationToken ct)
+    {
+        var demoCustomers = await _db.Customers
+            .Where(c => c.Email != null && c.Email.EndsWith("@demo.local"))
+            .ToListAsync(ct);
+        if (demoCustomers.Count == 0) return;
+
+        var customerIds = demoCustomers.Select(c => c.Id).ToHashSet();
+        var vehicleCounts = await _db.Vehicles
+            .Where(v => customerIds.Contains(v.CustomerId))
+            .GroupBy(v => v.CustomerId)
+            .Select(g => new { CustomerId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CustomerId, x => x.Count, ct);
+
+        var existingPlates = await _db.Vehicles.Select(v => v.PlateNumber).ToListAsync(ct);
+        var plateSet = new HashSet<string>(existingPlates, StringComparer.OrdinalIgnoreCase);
+        var insurers = await _db.InsuranceCompanies.OrderBy(c => c.Name).ToListAsync(ct);
+
+        var brands = new[] {
+            ("Toyota", "Corolla"), ("Volkswagen", "Golf"), ("Opel", "Astra"), ("Fiat", "Tipo"),
+            ("Ford", "Focus"), ("Hyundai", "i30"), ("Peugeot", "308"), ("Skoda", "Octavia"),
+            ("Citroen", "C4"), ("Nissan", "Qashqai"), ("Renault", "Megane"), ("Mazda", "3"),
+            ("Honda", "Civic"), ("Mitsubishi", "Lancer"), ("Suzuki", "Swift"), ("Kia", "Ceed")
+        };
+        var colors = new[] { "White", "Black", "Silver", "Red", "Blue", "Grey", "Green" };
+
+        var rng = new Random(7);
+        var added = 0;
+        foreach (var customer in demoCustomers)
+        {
+            var have = vehicleCounts.GetValueOrDefault(customer.Id, 0);
+            var target = rng.Next(2, 4); // 2 or 3
+            for (var k = have; k < target; k++)
+            {
+                var (brand, model) = brands[rng.Next(brands.Length)];
+                string plate;
+                var attempt = 0;
+                do
+                {
+                    plate = $"{RandomLetter(rng)}{RandomLetter(rng)}{RandomLetter(rng)}-{rng.Next(1000, 9999)}";
+                    attempt++;
+                } while (!plateSet.Add(plate) && attempt < 50);
+                if (attempt >= 50) break;
+
+                _db.Vehicles.Add(new Vehicle
+                {
+                    CustomerId = customer.Id,
+                    PlateNumber = plate,
+                    Brand = brand,
+                    Model = model,
+                    Year = 2015 + rng.Next(0, 10),
+                    Color = colors[rng.Next(colors.Length)],
+                    InsuranceCompanyId = insurers.Count > 0 ? insurers[rng.Next(insurers.Count)].Id : null,
+                    PolicyNumber = $"POL-{rng.Next(100000, 999999)}",
+                    InsuranceExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(rng.Next(1, 24))),
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                added++;
+            }
+        }
+        if (added > 0)
+        {
+            await _db.SaveChangesAsync(ct);
+            _log.LogInformation("Expanded demo vehicle fleet by {n} vehicles.", added);
+        }
+    }
+
+    private static char RandomLetter(Random rng) => (char)('A' + rng.Next(0, 26));
+
     // Existing demos were seeded against a single branch; if a 2nd branch has since
     // appeared (e.g. added via seed file or admin UI), spread the demo cases so the
     // branch selector + breakdown actually shows variation. Real (non-demo) cases

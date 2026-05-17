@@ -55,6 +55,7 @@ public partial class SeedRunner
         await SeedDemoCasesAsync(ct);
         await RebalanceDemoCasesAcrossBranchesAsync(ct);
         await BackfillDemoCaseEventsAsync(ct);
+        await ExpandDemoVehicleFleetAsync(ct);
         _log.LogInformation("Seed complete.");
     }
 
