@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -127,7 +126,7 @@ public partial class SeedRunner
     {
         if (await _users.FindByEmailAsync(email) is not null) return;
 
-        var password = GenerateRandomPassword();
+        var password = DefaultSeedPassword;
         var user = new User
         {
             Email = email,
@@ -170,7 +169,7 @@ public partial class SeedRunner
         const string adminEmail = "admin@paintbull.local";
         if (await _users.FindByEmailAsync(adminEmail) is not null) return;
 
-        var password = GenerateRandomPassword();
+        var password = DefaultSeedPassword;
         var admin = new User
         {
             Email = adminEmail,
@@ -365,12 +364,10 @@ public partial class SeedRunner
         return await JsonSerializer.DeserializeAsync<T>(stream, JsonOpts);
     }
 
-    private static string GenerateRandomPassword(int length = 16)
-    {
-        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
-        var bytes = RandomNumberGenerator.GetBytes(length);
-        return new string(bytes.Select(b => chars[b % chars.Length]).ToArray()) + "Aa1!";
-    }
+    // Dev-only shared password reused across the seeded admin + demo portal users.
+    // Same for everyone so screenshots and walkthroughs don't depend on chasing a
+    // random value through the boot log. NEVER use this seeder against a production DB.
+    private const string DefaultSeedPassword = "Workshop1!";
 }
 
 public static class SeedExtensions

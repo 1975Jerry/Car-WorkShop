@@ -158,14 +158,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var branchesTask = Mediator.Send(new GetBranchBreakdownQuery());
-        var agingTask = Mediator.Send(new GetAgingBucketsQuery());
-        var varianceTask = Mediator.Send(new GetPartsVarianceQuery());
+        // Sequential, not Task.WhenAll: handlers share a single scoped DbContext
+        // per Blazor circuit, so concurrent awaits throw the "second operation on
+        // this context" error.
+        _branches = await Mediator.Send(new GetBranchBreakdownQuery());
+        _aging = await Mediator.Send(new GetAgingBucketsQuery());
+        _variance = await Mediator.Send(new GetPartsVarianceQuery());
         await LoadTechniciansAsync();
-
-        _branches = await branchesTask;
-        _aging = await agingTask;
-        _variance = await varianceTask;
     }
 
     private async Task LoadTechniciansAsync()

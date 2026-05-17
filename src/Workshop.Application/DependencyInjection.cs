@@ -17,9 +17,13 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(assembly);
+            // Order matters: SerializeRequests must wrap ValidationBehavior so the
+            // lock is held across validation + handler, not just the handler body.
+            cfg.AddOpenBehavior(typeof(SerializeRequestsBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
         services.AddValidatorsFromAssembly(assembly);
+        services.AddScoped<RequestScopeLock>();
         services.AddScoped<ICaseGuardContextBuilder, CaseGuardContextBuilder>();
         services.AddScoped<IAllowedOpsValidator, AllowedOpsValidator>();
         services.AddScoped<ICaseNotificationRecipients, CaseNotificationRecipients>();
