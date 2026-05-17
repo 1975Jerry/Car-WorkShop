@@ -1,0 +1,106 @@
+@page "/cases/retail"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.RetailCases
+@using Workshop.Domain.Enums
+@using Workshop.Web.Components.Shared
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["RetailCases"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["RetailCases"]</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0" Outlined="true">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_search" Label="@L["Search"]" Variant="Variant.Outlined"
+                          Margin="Margin.Dense" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          DebounceInterval="300" OnDebounceIntervalElapsed="Reload" Clearable />
+        </MudItem>
+        <MudItem xs="6" md="4">
+            <MudSelect T="RetailCaseStatus?" @bind-Value="_statusFilter" @bind-Value:after="Reload"
+                       Label="@L["Status"]" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable>
+                @foreach (var s in Enum.GetValues<RetailCaseStatus>())
+                {
+                    <MudSelectItem T="RetailCaseStatus?" Value="@((RetailCaseStatus?)s)">@s</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudSelect T="Guid?" @bind-Value="_branchFilter" @bind-Value:after="Reload"
+                       Label="@L["Branch"]" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable>
+                @foreach (var b in _branches)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="1" Class="d-flex justify-end">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => Nav.NavigateTo("/cases/retail/new"))">@L["New"]</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable ServerData="LoadData" T="RetailCaseListItemDto" Dense Hover Striped @ref="_table"
+          OnRowClick="OnRowClick" RowClass="cursor-pointer">
+    <HeaderContent>
+        <MudTh>@L["CaseNumber"]</MudTh>
+        <MudTh>@L["Status"]</MudTh>
+        <MudTh>@L["Customer"]</MudTh>
+        <MudTh>@L["Vehicle"]</MudTh>
+        <MudTh>@L["WorkType"]</MudTh>
+        <MudTh>@L["Branch"]</MudTh>
+        <MudTh Class="text-right">@L["TotalWithVat"]</MudTh>
+        <MudTh>@L["ScheduledDate"]</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd><strong>@context.CaseNumber</strong></MudTd>
+        <MudTd><RetailCaseStatusChip Status="@context.Status" /></MudTd>
+        <MudTd>@context.CustomerDisplayName</MudTd>
+        <MudTd>@context.VehiclePlate — @context.VehicleBrandModel</MudTd>
+        <MudTd>@context.WorkType</MudTd>
+        <MudTd>@context.BranchName</MudTd>
+        <MudTd Class="text-right">@context.TotalWithVat.ToString("N2")</MudTd>
+        <MudTd>@(context.ScheduledDate?.ToString("yyyy-MM-dd"))</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="@(new[] { 25, 50, 100 })" />
+    </PagerContent>
+</MudTable>
+
+<style>.cursor-pointer td { cursor: pointer; } .text-right { text-align: right; }</style>
+
+@code {
+    private MudTable<RetailCaseListItemDto>? _table;
+    private string? _search;
+    private RetailCaseStatus? _statusFilter;
+    private Guid? _branchFilter;
+    private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _branches = await Mediator.Send(new GetBranchLookupQuery());
+    }
+
+    private async Task<TableData<RetailCaseListItemDto>> LoadData(TableState state, CancellationToken ct)
+    {
+        var r = await Mediator.Send(new ListRetailCasesQuery(
+            Search: _search,
+            Status: _statusFilter,
+            BranchId: _branchFilter,
+            Page: state.Page + 1,
+            PageSize: state.PageSize), ct);
+        return new TableData<RetailCaseListItemDto> { Items = r.Items, TotalItems = r.TotalCount };
+    }
+
+    private Task Reload() => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private void OnRowClick(TableRowClickEventArgs<RetailCaseListItemDto> args) =>
+        Nav.NavigateTo($"/cases/retail/{args.Item!.Id}");
+}

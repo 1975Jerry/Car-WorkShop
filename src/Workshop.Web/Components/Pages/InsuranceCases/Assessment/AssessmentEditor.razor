@@ -1,0 +1,240 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Assessments
+@using Workshop.Application.Features.BodyPanels
+@using Workshop.Application.Features.Photos
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <BodyPanelPicker Panels="_panels" OnPanelSelected="AddPanelRow"
+                             SelectedPanelIds="_selectedPanelIds" />
+        </MudItem>
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-3 mb-3" Outlined Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">@L["AssessmentDetails"]</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="4">
+                        <MudDatePicker @bind-Date="_assessmentDate" Label="@L["AssessmentDate"]"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudDatePicker @bind-Date="_agreementDate" Label="@L["AgreementDate"]"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField T="decimal" @bind-Value="_agreedAmount" Label="@L["AgreedAmount"]"
+                                         Min="0" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSwitch T="bool" @bind-Value="_partsRequired" Color="Color.Primary"
+                                   Label="@L["PartsRequired"]" />
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudNumericField T="decimal?" @bind-Value="_partsCost" Label="@L["PartsCost"]"
+                                         Min="0" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         Disabled="@(!_partsRequired)" />
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudNumericField T="decimal?" @bind-Value="_paintMaterialsCost" Label="@L["PaintMaterialsCost"]"
+                                         Min="0" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSwitch T="bool" @bind-Value="_intermediateInspection" Color="Color.Primary"
+                                   Label="@L["IntermediateInspection"]" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_notes" Label="@L["Notes"]" Lines="2"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <WorkItemsGrid Items="_workItems" OnChanged="StateHasChanged" />
+
+            <MudPaper Class="pa-3 mt-3" Outlined Elevation="0">
+                <MudGrid>
+                    <MudItem xs="6" md="3"><Field Label="@L["LaborSubtotal"]" Value="@LaborSubtotal.ToString("0.00")" /></MudItem>
+                    <MudItem xs="6" md="3"><Field Label="@L["PartsCost"]" Value="@((_partsRequired ? _partsCost : null)?.ToString("0.00"))" /></MudItem>
+                    <MudItem xs="6" md="3"><Field Label="@L["PaintMaterialsCost"]" Value="@_paintMaterialsCost?.ToString("0.00")" /></MudItem>
+                    <MudItem xs="6" md="3"><Field Label="@L["TotalEstimatedCost"]" Value="@TotalEstimatedCost.ToString("0.00")" /></MudItem>
+                </MudGrid>
+                <MudStack Row Justify="Justify.FlexEnd" Class="mt-3">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="Save" Disabled="@_saving">
+                        @L["Save"]
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+
+            @if (_assessmentId is Guid aid && aid != Guid.Empty)
+            {
+                <div class="mt-3">
+                    <PhotoGallery OwnerKind="PhotoOwnerKind.Assessment"
+                                  OwnerId="@aid"
+                                  Phase="@PhotoPhase.Intake"
+                                  Title="@L["IntakePhotos"]"
+                                  OnChanged="@(() => _photoBust++)" />
+                </div>
+                <div class="mt-3">
+                    <PhotoGallery OwnerKind="PhotoOwnerKind.Assessment"
+                                  OwnerId="@aid"
+                                  Phase="@PhotoPhase.Damage"
+                                  Title="@L["DamagePhotos"]"
+                                  OnChanged="@(() => _photoBust++)" />
+                </div>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Dense Class="mt-3">@L["SaveAssessmentBeforePhotos"]</MudAlert>
+            }
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private Guid? _assessmentId;
+    private int _photoBust;
+
+    private IReadOnlyList<BodyPanelDto> _panels = Array.Empty<BodyPanelDto>();
+    private Dictionary<Guid, HashSet<OperationType>> _panelAllowedOps = new();
+
+    private DateTime? _assessmentDate;
+    private DateTime? _agreementDate;
+    private decimal _agreedAmount;
+    private bool _partsRequired;
+    private decimal? _partsCost;
+    private decimal? _paintMaterialsCost;
+    private bool _intermediateInspection;
+    private string? _notes;
+
+    private readonly List<WorkItemRowVm> _workItems = new();
+
+    private IReadOnlyCollection<Guid> _selectedPanelIds
+        => _workItems.Where(w => w.BodyPanelId.HasValue).Select(w => w.BodyPanelId!.Value).Distinct().ToArray();
+
+    private decimal LaborSubtotal => _workItems.Sum(w => w.Total);
+    private decimal TotalEstimatedCost =>
+        LaborSubtotal + ((_partsRequired ? _partsCost : 0) ?? 0) + (_paintMaterialsCost ?? 0);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _panels = await Mediator.Send(new GetBodyPanelCatalogQuery());
+        _panelAllowedOps = _panels.ToDictionary(p => p.Id, p => p.AllowedOperations.ToHashSet());
+
+        var existing = await Mediator.Send(new GetAssessmentForCaseQuery(InsuranceCaseId));
+        if (existing is not null)
+        {
+            _assessmentId = existing.Id;
+            _assessmentDate = existing.AssessmentDate.ToDateTime(TimeOnly.MinValue);
+            _agreementDate = existing.AgreementDate.ToDateTime(TimeOnly.MinValue);
+            _agreedAmount = existing.AgreedAmount;
+            _partsRequired = existing.PartsRequired;
+            _partsCost = existing.PartsCost;
+            _paintMaterialsCost = existing.PaintMaterialsCost;
+            _intermediateInspection = existing.IntermediateInspection;
+            _notes = existing.Notes;
+            _workItems.Clear();
+            foreach (var w in existing.WorkItems)
+            {
+                _workItems.Add(new WorkItemRowVm
+                {
+                    Id = w.Id,
+                    BodyPanelId = w.BodyPanelId,
+                    PanelCode = w.BodyPanelCode,
+                    Description = w.Description,
+                    Cost_Polish = w.Cost_Polish,
+                    Cost_PDR = w.Cost_PDR,
+                    Cost_RemoveRefit = w.Cost_RemoveRefit,
+                    Cost_Replace = w.Cost_Replace,
+                    Cost_DisassembleAssemble = w.Cost_DisassembleAssemble,
+                    Cost_Repair = w.Cost_Repair,
+                    Cost_Paint = w.Cost_Paint,
+                    Cost_RepairPaint = w.Cost_RepairPaint,
+                    Cost_Weld = w.Cost_Weld,
+                    Cost_Other = w.Cost_Other,
+                    DiscountPct = w.DiscountPct,
+                    AllowedOperations = w.BodyPanelId.HasValue
+                        && _panelAllowedOps.TryGetValue(w.BodyPanelId.Value, out var ops) ? ops : null
+                });
+            }
+        }
+        else
+        {
+            _assessmentDate = DateTime.Today;
+            _agreementDate = DateTime.Today;
+        }
+        _loading = false;
+    }
+
+    private void AddPanelRow(BodyPanelDto panel)
+    {
+        _workItems.Add(new WorkItemRowVm
+        {
+            BodyPanelId = panel.Id,
+            PanelCode = panel.Code,
+            Description = panel.DescriptionGr,
+            AllowedOperations = panel.AllowedOperations.ToHashSet()
+        });
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (_assessmentDate is null || _agreementDate is null)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+            if (_workItems.Count == 0)
+            {
+                Snackbar.Add(L["AddAtLeastOneWorkItem"], Severity.Warning);
+                return;
+            }
+
+            var dto = new AssessmentUpsertDto(
+                DateOnly.FromDateTime(_assessmentDate.Value),
+                _partsRequired,
+                _partsCost,
+                _paintMaterialsCost,
+                _agreedAmount,
+                DateOnly.FromDateTime(_agreementDate.Value),
+                _intermediateInspection,
+                _notes,
+                _workItems.Select(w => w.ToUpsertDto()).ToList());
+
+            var assessmentId = await Mediator.Send(new UpsertAssessmentCommand(InsuranceCaseId, dto));
+            _assessmentId = assessmentId;
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally { _saving = false; }
+    }
+}

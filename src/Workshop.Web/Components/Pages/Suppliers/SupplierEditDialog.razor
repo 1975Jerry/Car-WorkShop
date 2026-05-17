@@ -1,0 +1,97 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Suppliers
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.Name" Label="@L["Name"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.VatNumber" Label="@L["VatNumber"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.ContactPerson" Label="@L["ContactPerson"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.Phone" Label="@L["Phone"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.Email" Label="@L["Email"]" InputType="InputType.Email"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.AddressLine" Label="@L["Address"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSwitch T="bool" @bind-Value="_data.IsActive" Color="Color.Success" Label="@L["Active"]" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => Dialog.Cancel())">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_saving">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Guid? Id { get; set; }
+    private bool _saving;
+    private FormModel _data = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Id.HasValue) return;
+        var s = await Mediator.Send(new GetSupplierByIdQuery(Id.Value));
+        if (s is null) return;
+        _data = new FormModel { Name = s.Name, VatNumber = s.VatNumber, Phone = s.Phone,
+            Email = s.Email, AddressLine = s.AddressLine, ContactPerson = s.ContactPerson,
+            Notes = s.Notes, IsActive = s.IsActive };
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            var dto = new SupplierUpsertDto(_data.Name, _data.VatNumber, _data.Phone, _data.Email,
+                _data.AddressLine, _data.ContactPerson, _data.Notes, _data.IsActive);
+            if (Id.HasValue) await Mediator.Send(new UpdateSupplierCommand(Id.Value, dto));
+            else await Mediator.Send(new CreateSupplierCommand(dto));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private class FormModel
+    {
+        public string Name { get; set; } = "";
+        public string? VatNumber { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? AddressLine { get; set; }
+        public string? ContactPerson { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

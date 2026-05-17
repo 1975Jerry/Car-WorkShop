@@ -1,0 +1,103 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.Assessors
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.FullName" Label="@L["FullName"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.Phone" Label="@L["Phone"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.Email" Label="@L["Email"]" InputType="InputType.Email"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.LicenseNumber" Label="@L["LicenseNumber"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudSelect T="Guid?" @bind-Value="_data.InsuranceCompanyId" Label="@L["InsuranceCompany"]"
+                           Clearable Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var ic in _companies)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)ic.Id)">@ic.Label</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSwitch T="bool" @bind-Value="_data.IsActive" Color="Color.Success" Label="@L["Active"]" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => Dialog.Cancel())">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_saving">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Guid? Id { get; set; }
+    private bool _saving;
+    private FormModel _data = new();
+    private IReadOnlyList<LookupItem> _companies = Array.Empty<LookupItem>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _companies = await Mediator.Send(new GetInsuranceCompanyLookupQuery());
+        if (!Id.HasValue) return;
+        var a = await Mediator.Send(new GetAssessorByIdQuery(Id.Value));
+        if (a is null) return;
+        _data = new FormModel
+        {
+            FullName = a.FullName, Phone = a.Phone, Email = a.Email,
+            LicenseNumber = a.LicenseNumber, InsuranceCompanyId = a.InsuranceCompanyId,
+            Notes = a.Notes, IsActive = a.IsActive
+        };
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            var dto = new AssessorUpsertDto(_data.FullName, _data.Phone, _data.Email,
+                _data.LicenseNumber, _data.InsuranceCompanyId, _data.Notes, _data.IsActive);
+            if (Id.HasValue) await Mediator.Send(new UpdateAssessorCommand(Id.Value, dto));
+            else await Mediator.Send(new CreateAssessorCommand(dto));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private class FormModel
+    {
+        public string FullName { get; set; } = "";
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? LicenseNumber { get; set; }
+        public Guid? InsuranceCompanyId { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

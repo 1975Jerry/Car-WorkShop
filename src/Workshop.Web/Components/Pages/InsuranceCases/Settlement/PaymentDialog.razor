@@ -1,0 +1,100 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Payments
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        @if (RemainingBalance > 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense Class="mb-2">
+                @string.Format(L["RemainingBalanceHint"], RemainingBalance.ToString("0.00"))
+            </MudAlert>
+        }
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal" @bind-Value="_amount" Label="@L["Amount"]" Min="0.01m"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Required />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_paymentDate" Label="@L["PaymentDate"]" Required
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="PaymentMethod" @bind-Value="_method" Label="@L["PaymentMethod"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                    <MudSelectItem Value="@PaymentMethod.Cash">@L["PM_Cash"]</MudSelectItem>
+                    <MudSelectItem Value="@PaymentMethod.Card">@L["PM_Card"]</MudSelectItem>
+                    <MudSelectItem Value="@PaymentMethod.BankTransfer">@L["PM_BankTransfer"]</MudSelectItem>
+                    <MudSelectItem Value="@PaymentMethod.InsurancePayout">@L["PM_InsurancePayout"]</MudSelectItem>
+                    <MudSelectItem Value="@PaymentMethod.Other">@L["PM_Other"]</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_payer" Label="@L["Payer"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_reference" Label="@L["Reference"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@_saving">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public decimal RemainingBalance { get; set; }
+
+    private decimal _amount;
+    private DateTime? _paymentDate = DateTime.Today;
+    private PaymentMethod _method = PaymentMethod.BankTransfer;
+    private string? _payer;
+    private string? _reference;
+    private string? _notes;
+    private bool _saving;
+
+    protected override void OnInitialized()
+    {
+        if (RemainingBalance > 0) _amount = RemainingBalance;
+    }
+
+    private async Task Save()
+    {
+        if (_paymentDate is null || _amount <= 0)
+        {
+            Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+            return;
+        }
+        _saving = true;
+        try
+        {
+            var dto = new CreatePaymentDto(
+                _amount, DateOnly.FromDateTime(_paymentDate.Value),
+                _method, _payer, _reference, _notes);
+            await Mediator.Send(new CreatePaymentCommand(InsuranceCaseId, dto));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

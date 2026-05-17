@@ -1,0 +1,182 @@
+@page "/portal/cases/insurance/{Id:guid}"
+@page "/portal/cases/retail/{Id:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "CustomerPortal")]
+@layout Workshop.Web.Components.Layout.PortalLayout
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Abstractions
+@using Workshop.Application.Features.CustomerPortal
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject ICurrentUserService CurrentUser
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @(_case?.CaseNumber ?? "...")</PageTitle>
+
+<MudStack Row AlignItems="AlignItems.Center" Class="mb-3">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Nav.NavigateTo("/portal"))" />
+    <MudText Typo="Typo.h5" Class="ms-2">@(_case?.CaseNumber ?? "")</MudText>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else if (_case is null)
+{
+    <MudAlert Severity="Severity.Warning">@L["NoCasesYet"]</MudAlert>
+}
+else
+{
+    <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+            <MudText Typo="Typo.h6">@_case.VehiclePlate · @_case.VehicleBrand @_case.VehicleModel</MudText>
+            <MudChip T="string" Color="@(_case.Kind == PortalCaseKind.Insurance ? Color.Info : Color.Primary)">
+                @_case.StatusLabel
+            </MudChip>
+        </MudStack>
+
+        <MudGrid>
+            @if (!string.IsNullOrWhiteSpace(_case.WorkType))
+            {
+                <MudItem xs="12"><Field Label="@L["WorkType"]" Value="@_case.WorkType" /></MudItem>
+            }
+            @if (!string.IsNullOrWhiteSpace(_case.InsuranceCompanyName))
+            {
+                <MudItem xs="12" sm="6"><Field Label="@L["InsuranceCompany"]" Value="@_case.InsuranceCompanyName" /></MudItem>
+            }
+            @if (!string.IsNullOrWhiteSpace(_case.ClaimNumber))
+            {
+                <MudItem xs="12" sm="6"><Field Label="@L["ClaimNumber"]" Value="@_case.ClaimNumber" /></MudItem>
+            }
+            @if (_case.AccidentDate.HasValue)
+            {
+                <MudItem xs="12" sm="6"><Field Label="@L["AccidentDate"]" Value="@_case.AccidentDate.Value.ToString("yyyy-MM-dd")" /></MudItem>
+            }
+            @if (_case.ScheduledDate.HasValue)
+            {
+                <MudItem xs="12" sm="6"><Field Label="@L["ScheduledDate"]" Value="@_case.ScheduledDate.Value.ToString("yyyy-MM-dd")" /></MudItem>
+            }
+        </MudGrid>
+    </MudPaper>
+
+    @if (_case.AgreedAmount > 0)
+    {
+        <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+            <MudText Typo="Typo.h6" Class="mb-2">@L["SettlementSummary"]</MudText>
+            <MudGrid>
+                <MudItem xs="6" sm="4"><Field Label="@L["AgreedAmount"]" Value="@_case.AgreedAmount.ToString("0.00")" /></MudItem>
+                <MudItem xs="6" sm="4"><Field Label="@L["TotalPaid"]" Value="@_case.TotalPaid.ToString("0.00")" /></MudItem>
+                <MudItem xs="12" sm="4"><Field Label="@L["RemainingBalance"]" Value="@_case.RemainingBalance.ToString("0.00")" /></MudItem>
+            </MudGrid>
+            @if (_case.IsFullyPaid)
+            {
+                <MudAlert Severity="Severity.Success" Dense Class="mt-2">@L["FullyPaid"]</MudAlert>
+            }
+        </MudPaper>
+    }
+
+    <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+        <MudText Typo="Typo.h6" Class="mb-2">@L["StatusHistory"]</MudText>
+        @if (_events.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NoEvents"]</MudText>
+        }
+        else
+        {
+            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                @foreach (var e in _events)
+                {
+                    <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                        <MudText Typo="Typo.body2"><strong>@e.ToStatusLabel</strong></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @e.OccurredAt.ToString("yyyy-MM-dd HH:mm")
+                        </MudText>
+                    </MudTimelineItem>
+                }
+            </MudTimeline>
+        }
+    </MudPaper>
+
+    @if (_photos.Count > 0)
+    {
+        <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+            <MudText Typo="Typo.h6" Class="mb-2">@L["WorkPhotos"]</MudText>
+            <div class="d-flex flex-wrap" style="gap: 8px;">
+                @foreach (var p in _photos)
+                {
+                    <a href="/@p.FilePath" target="_blank" rel="noopener">
+                        <img src="/@p.FilePath" alt="@p.Phase"
+                             style="width: 140px; height: 140px; object-fit: cover; border-radius: 4px;" />
+                    </a>
+                }
+            </div>
+        </MudPaper>
+    }
+
+    @if (_documents.Count > 0)
+    {
+        <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+            <MudText Typo="Typo.h6" Class="mb-2">@L["MyDocuments"]</MudText>
+            <MudList T="MyDocumentDto" Dense>
+                @foreach (var d in _documents)
+                {
+                    <MudListItem T="MyDocumentDto" Value="d">
+                        <MudIcon Icon="@Icons.Material.Filled.Description" Class="me-2" />
+                        <a href="/@d.FilePath" target="_blank" rel="noopener">@d.FileName</a>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ms-2">
+                            @L[$"DT_{d.DocumentType}"]
+                        </MudText>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudPaper>
+    }
+
+    <MudPaper Class="pa-4" Outlined Elevation="0">
+        <MudText Typo="Typo.h6" Class="mb-2">@L["WorkshopContact"]</MudText>
+        <MudText>@_case.BranchName</MudText>
+        @if (!string.IsNullOrWhiteSpace(_case.BranchAddress))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@_case.BranchAddress</MudText>
+        }
+        @if (!string.IsNullOrWhiteSpace(_case.BranchPhone))
+        {
+            <MudText Typo="Typo.body2"><a href="@($"tel:{_case.BranchPhone}")">@_case.BranchPhone</a></MudText>
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private MyCaseDetailDto? _case;
+    private IReadOnlyList<MyCaseEventDto> _events = Array.Empty<MyCaseEventDto>();
+    private IReadOnlyList<MyDocumentDto> _documents = Array.Empty<MyDocumentDto>();
+    private IReadOnlyList<MyPhotoDto> _photos = Array.Empty<MyPhotoDto>();
+
+    private PortalCaseKind Kind =>
+        Nav.Uri.Contains("/portal/cases/retail/", StringComparison.OrdinalIgnoreCase)
+            ? PortalCaseKind.Retail : PortalCaseKind.Insurance;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        var customerId = CurrentUser.CustomerId;
+        if (customerId is null) { _loading = false; return; }
+
+        _case = Kind == PortalCaseKind.Insurance
+            ? await Mediator.Send(new GetMyInsuranceCaseQuery(customerId.Value, Id))
+            : await Mediator.Send(new GetMyRetailCaseQuery(customerId.Value, Id));
+
+        if (_case is not null)
+        {
+            _events = await Mediator.Send(new GetMyCaseEventsQuery(customerId.Value, Id, Kind));
+            _documents = await Mediator.Send(new GetMyCaseDocumentsQuery(customerId.Value, Id, Kind));
+            _photos = await Mediator.Send(new GetMyCasePhotosQuery(customerId.Value, Id, Kind));
+        }
+        _loading = false;
+    }
+}

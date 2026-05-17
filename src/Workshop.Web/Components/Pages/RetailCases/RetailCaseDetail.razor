@@ -1,0 +1,169 @@
+@page "/cases/retail/{Id:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.RetailCases
+@using Workshop.Domain.Enums
+@using Workshop.Web.Components.Pages.RetailCases.Documents
+@using Workshop.Web.Components.Pages.RetailCases.Parts
+@using Workshop.Web.Components.Pages.RetailCases.Repair
+@using Workshop.Web.Components.Pages.RetailCases.Settlement
+@using Workshop.Web.Components.Shared
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @(_case?.CaseNumber ?? "...")</PageTitle>
+
+@if (_case is null)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                @_case.CaseNumber
+                <RetailCaseStatusChip Status="@_case.Status" />
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @_case.CustomerDisplayName · @_case.VehiclePlate (@_case.VehicleBrand @_case.VehicleModel) · @_case.BranchName
+            </MudText>
+        </div>
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick="@(() => Nav.NavigateTo("/cases/retail"))" />
+    </MudStack>
+
+    <MudGrid>
+        <MudItem xs="12" lg="8">
+            <MudTabs Outlined PanelClass="pa-4" Rounded ApplyEffectsToContainer>
+                <MudTabPanel Text="@L["Overview"]">
+                    <MudGrid>
+                        <MudItem xs="12" md="6"><Field Label="@L["Customer"]" Value="@_case.CustomerDisplayName" /></MudItem>
+                        <MudItem xs="12" md="6"><Field Label="@L["Phone"]" Value="@_case.CustomerPhone" /></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["Vehicle"]" Value="@($"{_case.VehicleBrand} {_case.VehicleModel}")" /></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["PlateNumber"]" Value="@_case.VehiclePlate" /></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["Year"]" Value="@_case.VehicleYear?.ToString()" /></MudItem>
+                        <MudItem xs="12" md="8"><Field Label="@L["WorkType"]" Value="@_case.WorkType" /></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["ScheduledDate"]" Value="@(_case.ScheduledDate?.ToString("yyyy-MM-dd"))" /></MudItem>
+
+                        <MudItem xs="12"><MudDivider Class="my-2" /><MudText Typo="Typo.subtitle1">@L["CaseTotals"]</MudText></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["FinalCost"]" Value="@_case.FinalCost.ToString("0.00")" /></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["VatAmount"]" Value="@_case.VatAmount.ToString("0.00")" /></MudItem>
+                        <MudItem xs="12" md="4"><Field Label="@L["TotalWithVat"]" Value="@_case.TotalWithVat.ToString("0.00")" /></MudItem>
+
+                        @if (!string.IsNullOrWhiteSpace(_case.Notes))
+                        {
+                            <MudItem xs="12">
+                                <MudDivider Class="my-2" />
+                                <Field Label="@L["Notes"]" Value="@_case.Notes" />
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudTabPanel>
+                <MudTabPanel Text="@L["Parts"]">
+                    <RetailPartsTab RetailCaseId="@Id" OnChanged="Refresh" />
+                </MudTabPanel>
+                <MudTabPanel Text="@L["Repair"]">
+                    <RetailRepairTab RetailCaseId="@Id" OnChanged="Refresh" />
+                </MudTabPanel>
+                <MudTabPanel Text="@L["Settlement"]">
+                    <RetailSettlementTab RetailCaseId="@Id" OnChanged="Refresh" />
+                </MudTabPanel>
+                <MudTabPanel Text="@L["Documents"]">
+                    <RetailDocumentsTab RetailCaseId="@Id" OnChanged="Refresh" />
+                </MudTabPanel>
+                <MudTabPanel Text="@L["Timeline"]">
+                    @if (_events.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NoEvents"]</MudText>
+                    }
+                    else
+                    {
+                        <MudTimeline TimelinePosition="TimelinePosition.Start">
+                            @foreach (var e in _events)
+                            {
+                                <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                    <MudText Typo="Typo.body2">
+                                        <strong>@e.FromStatus → @e.ToStatus</strong>
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @e.OccurredAt.ToString("yyyy-MM-dd HH:mm") · @e.TriggeredByName
+                                    </MudText>
+                                    @if (!string.IsNullOrWhiteSpace(e.Reason))
+                                    {
+                                        <MudText Typo="Typo.body2" Class="mt-1">@e.Reason</MudText>
+                                    }
+                                </MudTimelineItem>
+                            }
+                        </MudTimeline>
+                    }
+                </MudTabPanel>
+            </MudTabs>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["WorkflowActions"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @L["CurrentStatus"]: <strong>@_case.Status</strong>
+                </MudText>
+
+                @foreach (var target in RetailCaseTransitions.AllowedNext(_case.Status))
+                {
+                    <MudButton Class="mb-2" FullWidth Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.ArrowForward"
+                               OnClick="@(() => Transition(target))">
+                        @L["AdvanceTo"] @target
+                    </MudButton>
+                }
+
+                @if (RetailCaseTransitions.AllowedNext(_case.Status).Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense>@L["NoEvents"]</MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private RetailCaseDetailDto? _case;
+    private IReadOnlyList<RetailCaseEventDto> _events = Array.Empty<RetailCaseEventDto>();
+
+    protected override async Task OnParametersSetAsync() => await Refresh();
+
+    private async Task Refresh()
+    {
+        _case = await Mediator.Send(new GetRetailCaseByIdQuery(Id));
+        if (_case is null) { Nav.NavigateTo("/cases/retail"); return; }
+        _events = await Mediator.Send(new GetRetailCaseEventsQuery(Id));
+    }
+
+    private async Task Transition(RetailCaseStatus target)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = $"{L["AdvanceTo"]} {target}",
+            Message = L["ConfirmTransition"],
+            YesText = L["Confirm"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+
+        try
+        {
+            await Mediator.Send(new TransitionRetailCaseCommand(Id, target, Reason: null));
+            Snackbar.Add(L["TransitionRecorded"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

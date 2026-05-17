@@ -1,0 +1,160 @@
+@using MudBlazor
+@using Workshop.Application.Features.BodyPanels
+@using Workshop.Domain.Enums
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudPaper Class="pa-3" Outlined Elevation="0">
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+        <MudText Typo="Typo.subtitle1">@L["WorkItems"]</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                   Variant="Variant.Outlined" OnClick="AddBlankRow">
+            @L["AddRow"]
+        </MudButton>
+    </MudStack>
+
+    @if (Items.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">@L["NoWorkItemsYet"]</MudAlert>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <MudSimpleTable Dense Hover Striped Bordered Style="min-width: 1500px;">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">@L["Panel"]</th>
+                        <th style="min-width: 220px;">@L["Description"]</th>
+                        @foreach (var op in AllOperations)
+                        {
+                            <th style="min-width: 90px; text-align: right;">@OpLabel(op)</th>
+                        }
+                        <th style="width: 90px; text-align: right;">@L["DiscountPct"]</th>
+                        <th style="width: 110px; text-align: right;">@L["Total"]</th>
+                        <th style="width: 40px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Items.Count; i++)
+                    {
+                        var idx = i;
+                        var row = Items[idx];
+                        var allowed = AllowedOpsFor(row);
+                        <tr>
+                            <td>
+                                @if (!string.IsNullOrEmpty(row.PanelCode))
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Text="@row.PanelCode" />
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">—</MudText>
+                                }
+                            </td>
+                            <td>
+                                <MudTextField T="string" @bind-Value="row.Description"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                                              FullWidth />
+                            </td>
+                            @foreach (var op in AllOperations)
+                            {
+                                <td style="text-align: right;">
+                                    @if (allowed.Contains(op))
+                                    {
+                                        <MudNumericField T="decimal?" Value="@row.Cost(op)"
+                                                         ValueChanged="@(v => OnCostChanged(idx, op, v))"
+                                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                                         Min="0" HideSpinButtons />
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">—</MudText>
+                                    }
+                                </td>
+                            }
+                            <td>
+                                <MudNumericField T="decimal?" Value="@row.DiscountPct"
+                                                 ValueChanged="@(v => { row.DiscountPct = v; NotifyChanged(); })"
+                                                 Variant="Variant.Outlined" Margin="Margin.Dense"
+                                                 Min="0" Max="100" HideSpinButtons />
+                            </td>
+                            <td style="text-align: right;">
+                                <strong>@row.Total.ToString("0.00")</strong>
+                            </td>
+                            <td>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error" Size="Size.Small"
+                                               OnClick="@(() => RemoveRow(idx))" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="@(2 + AllOperations.Length + 1)" style="text-align: right;">
+                            <strong>@L["LaborSubtotal"]</strong>
+                        </td>
+                        <td style="text-align: right;"><strong>@LaborSubtotal.ToString("0.00")</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </MudSimpleTable>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public IList<WorkItemRowVm> Items { get; set; } = new List<WorkItemRowVm>();
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private static readonly OperationType[] AllOperations =
+    {
+        OperationType.Polish, OperationType.PDR, OperationType.RemoveRefit,
+        OperationType.Replace, OperationType.DisassembleAssemble, OperationType.Repair,
+        OperationType.Paint, OperationType.RepairPaint, OperationType.Weld, OperationType.Other
+    };
+
+    private decimal LaborSubtotal => Items.Sum(r => r.Total);
+
+    private void AddBlankRow()
+    {
+        Items.Add(new WorkItemRowVm());
+        NotifyChanged();
+    }
+
+    private void RemoveRow(int idx)
+    {
+        if (idx < 0 || idx >= Items.Count) return;
+        Items.RemoveAt(idx);
+        NotifyChanged();
+    }
+
+    private void OnCostChanged(int idx, OperationType op, decimal? value)
+    {
+        Items[idx].SetCost(op, value);
+        NotifyChanged();
+    }
+
+    private void NotifyChanged()
+    {
+        if (OnChanged.HasDelegate) _ = OnChanged.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private HashSet<OperationType> AllowedOpsFor(WorkItemRowVm row) =>
+        row.AllowedOperations ?? AllOperations.ToHashSet();
+
+    private string OpLabel(OperationType op) => op switch
+    {
+        OperationType.Polish => L["Op_Polish"],
+        OperationType.PDR => L["Op_PDR"],
+        OperationType.RemoveRefit => L["Op_RemoveRefit"],
+        OperationType.Replace => L["Op_Replace"],
+        OperationType.DisassembleAssemble => L["Op_DisassembleAssemble"],
+        OperationType.Repair => L["Op_Repair"],
+        OperationType.Paint => L["Op_Paint"],
+        OperationType.RepairPaint => L["Op_RepairPaint"],
+        OperationType.Weld => L["Op_Weld"],
+        OperationType.Other => L["Op_Other"],
+        _ => op.ToString()
+    };
+}

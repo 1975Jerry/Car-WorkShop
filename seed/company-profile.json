@@ -1,0 +1,12 @@
+{
+  "Name": "Paint Bull",
+  "AddressLine": "Παν. Τσαλδάρη 41",
+  "City": "Ταύρος",
+  "PostalCode": null,
+  "Phone": "2102202898",
+  "Email": null,
+  "VatNumber": "TBD",
+  "TaxOffice": null,
+  "LogoPath": null,
+  "DefaultVatRate": 24.00
+}

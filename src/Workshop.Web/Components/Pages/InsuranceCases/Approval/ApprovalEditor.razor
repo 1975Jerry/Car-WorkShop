@@ -1,0 +1,163 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.InsuranceApprovals
+@using Workshop.Application.Features.Quotes
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <QuoteSummary Quote="_quote" />
+
+    <MudStack Row Spacing="2" Class="mb-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Receipt"
+                   OnClick="IssueNewQuote" Disabled="@_issuingQuote">
+            @(_quote is null ? L["IssueQuote"] : L["ReissueQuote"])
+        </MudButton>
+    </MudStack>
+
+    <MudPaper Class="pa-3" Outlined Elevation="0">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">@L["InsuranceApproval"]</MudText>
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudSelect T="ApprovalStatus" @bind-Value="_status" Label="@L["ApprovalStatus"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                    <MudSelectItem Value="@ApprovalStatus.Pending">@L["AS_Pending"]</MudSelectItem>
+                    <MudSelectItem Value="@ApprovalStatus.Approved">@L["AS_Approved"]</MudSelectItem>
+                    <MudSelectItem Value="@ApprovalStatus.PartialApproval">@L["AS_PartialApproval"]</MudSelectItem>
+                    <MudSelectItem Value="@ApprovalStatus.Rejected">@L["AS_Rejected"]</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDatePicker @bind-Date="_approvalDate" Label="@L["ApprovalDate"]"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="decimal" @bind-Value="_approvedAmount" Label="@L["ApprovedAmount"]"
+                                 Min="0" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSwitch T="bool" @bind-Value="_liability" Color="Color.Primary"
+                           Label="@L["LiabilityAccepted"]" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSwitch T="bool" @bind-Value="_customerParticipation" Color="Color.Primary"
+                           Label="@L["CustomerParticipationFlag"]" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="decimal?" @bind-Value="_participationAmount" Label="@L["ParticipationAmount"]"
+                                 Min="0" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                 Disabled="@(!_customerParticipation)" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+
+        <MudStack Row Justify="Justify.FlexEnd" Class="mt-3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       OnClick="Save" Disabled="@_saving">
+                @L["Save"]
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private bool _issuingQuote;
+
+    private QuoteDto? _quote;
+
+    private DateTime? _approvalDate;
+    private ApprovalStatus _status = ApprovalStatus.Pending;
+    private decimal _approvedAmount;
+    private bool _liability;
+    private bool _customerParticipation;
+    private decimal? _participationAmount;
+    private string? _notes;
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _quote = await Mediator.Send(new GetCurrentQuoteForCaseQuery(InsuranceCaseId));
+        var existing = await Mediator.Send(new GetInsuranceApprovalForCaseQuery(InsuranceCaseId));
+        if (existing is not null)
+        {
+            _status = existing.ApprovalStatus;
+            _approvalDate = existing.ApprovalDate.ToDateTime(TimeOnly.MinValue);
+            _approvedAmount = existing.ApprovedAmount;
+            _liability = existing.LiabilityAccepted;
+            _customerParticipation = existing.CustomerParticipation;
+            _participationAmount = existing.ParticipationAmount;
+            _notes = existing.Notes;
+        }
+        else
+        {
+            _approvalDate = DateTime.Today;
+        }
+        _loading = false;
+    }
+
+    private async Task IssueNewQuote()
+    {
+        _issuingQuote = true;
+        try
+        {
+            await Mediator.Send(new IssueQuoteCommand(InsuranceCaseId));
+            Snackbar.Add(L["QuoteIssued"], Severity.Success);
+            await Reload();
+            if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _issuingQuote = false; }
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (_approvalDate is null)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+
+            var dto = new InsuranceApprovalUpsertDto(
+                _liability, _customerParticipation, _participationAmount,
+                _approvedAmount, DateOnly.FromDateTime(_approvalDate.Value),
+                _status, _notes);
+
+            await Mediator.Send(new UpsertInsuranceApprovalCommand(InsuranceCaseId, dto));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally { _saving = false; }
+    }
+}

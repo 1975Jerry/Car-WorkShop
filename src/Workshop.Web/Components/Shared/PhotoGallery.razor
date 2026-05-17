@@ -1,0 +1,127 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Photos
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudPaper Class="pa-3" Outlined Elevation="0">
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+        <MudText Typo="Typo.subtitle1">@Title (@_photos.Count)</MudText>
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                       FilesChanged="OnFilesSelected"
+                       Accept="@AcceptedTypes"
+                       MaximumFileCount="10"
+                       Hidden="false">
+            <ActivatorContent>
+                <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Upload" Size="Size.Small">
+                    @L["Upload"]
+                </MudButton>
+            </ActivatorContent>
+        </MudFileUpload>
+    </MudStack>
+
+    @if (_uploading)
+    {
+        <MudProgressLinear Indeterminate Color="Color.Primary" Class="mb-2" />
+    }
+
+    @if (_photos.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Dense>@L["NoPhotosYet"]</MudAlert>
+    }
+    else
+    {
+        <MudGrid Spacing="2">
+            @foreach (var p in _photos)
+            {
+                <MudItem xs="6" sm="4" md="3">
+                    <MudPaper Outlined Class="pa-1" Style="position: relative;">
+                        <a href="/@p.FilePath" target="_blank" rel="noopener">
+                            <img src="/@p.FilePath" alt="@p.FileName"
+                                 style="width:100%; height: 140px; object-fit: cover; border-radius: 4px;" />
+                        </a>
+                        <MudText Typo="Typo.caption" Class="mt-1" Style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            @p.FileName
+                        </MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                       Color="Color.Error"
+                                       Style="position: absolute; top: 2px; right: 2px; background: rgba(255,255,255,0.85);"
+                                       OnClick="@(() => DeletePhoto(p))" />
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public PhotoOwnerKind OwnerKind { get; set; }
+    [Parameter, EditorRequired] public Guid OwnerId { get; set; }
+    [Parameter, EditorRequired] public PhotoPhase Phase { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string AcceptedTypes { get; set; } = "image/*";
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private IReadOnlyList<PhotoDto> _photos = Array.Empty<PhotoDto>();
+    private bool _uploading;
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        if (OwnerId == Guid.Empty) { _photos = Array.Empty<PhotoDto>(); return; }
+        _photos = await Mediator.Send(new GetPhotosForOwnerQuery(OwnerKind, OwnerId, Phase));
+    }
+
+    private async Task OnFilesSelected(IReadOnlyList<IBrowserFile>? files)
+    {
+        if (files is null || files.Count == 0 || OwnerId == Guid.Empty) return;
+        _uploading = true;
+        try
+        {
+            foreach (var f in files)
+            {
+                if (f.Size > 20L * 1024 * 1024)
+                {
+                    Snackbar.Add(string.Format(L["FileTooLarge"], f.Name), Severity.Warning);
+                    continue;
+                }
+                await using var stream = f.OpenReadStream(20L * 1024 * 1024);
+                var input = new UploadPhotoInput(OwnerKind, OwnerId, Phase,
+                    f.Name, f.ContentType, f.Size, null);
+                await Mediator.Send(new UploadPhotoCommand(input, stream));
+            }
+            Snackbar.Add(L["UploadedSuccessfully"], Severity.Success);
+            await Reload();
+            if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _uploading = false; }
+    }
+
+    private async Task DeletePhoto(PhotoDto p)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"],
+            Message = L["ConfirmDeletePhoto"],
+            YesText = L["Delete"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+        try
+        {
+            await Mediator.Send(new DeletePhotoCommand(p.Id));
+            Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+            await Reload();
+            if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+}

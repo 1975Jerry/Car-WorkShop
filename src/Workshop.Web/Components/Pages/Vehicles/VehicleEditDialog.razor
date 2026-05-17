@@ -1,0 +1,219 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.Vehicles
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_data">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
+                                     Value="_customer" ValueChanged="OnCustomerSelected"
+                                     ToStringFunc="@(x => x?.Label ?? "")"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     Required ShowProgressIndicator />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_data.PlateNumber" Label="@L["PlateNumber"]" Required
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_data.Vin" Label="VIN"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_data.Brand" Label="@L["Brand"]" Required
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_data.Model" Label="@L["Model"]" Required
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_data.Version" Label="@L["Version"]"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="3">
+                    <MudNumericField @bind-Value="_data.Year" Label="@L["Year"]" Min="1900" Max="2100"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="3">
+                    <MudTextField @bind-Value="_data.Color" Label="@L["Color"]"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudSelect T="FuelType?" @bind-Value="_data.FuelType" Label="@L["FuelType"]" Clearable
+                               Variant="Variant.Outlined" Margin="Margin.Dense">
+                        <MudSelectItem T="FuelType?" Value="@((FuelType?)FuelType.Petrol)">@L["FuelPetrol"]</MudSelectItem>
+                        <MudSelectItem T="FuelType?" Value="@((FuelType?)FuelType.Diesel)">@L["FuelDiesel"]</MudSelectItem>
+                        <MudSelectItem T="FuelType?" Value="@((FuelType?)FuelType.LPG)">LPG</MudSelectItem>
+                        <MudSelectItem T="FuelType?" Value="@((FuelType?)FuelType.Electric)">@L["FuelElectric"]</MudSelectItem>
+                        <MudSelectItem T="FuelType?" Value="@((FuelType?)FuelType.Hybrid)">@L["FuelHybrid"]</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_data.Mileage" Label="@L["Mileage"]" Min="0"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">@L["Insurance"]</MudText>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudSelect T="Guid?" @bind-Value="_data.InsuranceCompanyId" Label="@L["InsuranceCompany"]"
+                               Clearable Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var ic in _insuranceCompanies)
+                        {
+                            <MudSelectItem T="Guid?" Value="@((Guid?)ic.Id)">@ic.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_data.PolicyNumber" Label="@L["PolicyNumber"]"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_insuranceExp" Label="@L["InsuranceExpiration"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudSwitch T="bool" @bind-Value="_data.IsActive" Color="Color.Success" Label="@L["Active"]" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="2"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_saving">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Guid? Id { get; set; }
+    [Parameter] public Guid? CustomerId { get; set; }
+
+    private MudForm? _form;
+    private bool _saving;
+    private FormModel _data = new();
+    private LookupItem? _customer;
+    private DateTime? _insuranceExp;
+    private IReadOnlyList<LookupItem> _insuranceCompanies = Array.Empty<LookupItem>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _insuranceCompanies = await Mediator.Send(new GetInsuranceCompanyLookupQuery());
+
+        if (Id.HasValue)
+        {
+            var v = await Mediator.Send(new GetVehicleByIdQuery(Id.Value));
+            if (v is not null)
+            {
+                _data = new FormModel
+                {
+                    CustomerId = v.CustomerId,
+                    PlateNumber = v.PlateNumber,
+                    Vin = v.Vin,
+                    Brand = v.Brand,
+                    Model = v.Model,
+                    Version = v.Version,
+                    Year = v.Year,
+                    Color = v.Color,
+                    FuelType = v.FuelType,
+                    Mileage = v.Mileage,
+                    InsuranceCompanyId = v.InsuranceCompanyId,
+                    PolicyNumber = v.PolicyNumber,
+                    InsuranceExpiration = v.InsuranceExpiration,
+                    Notes = v.Notes,
+                    IsActive = v.IsActive
+                };
+                _insuranceExp = v.InsuranceExpiration?.ToDateTime(TimeOnly.MinValue);
+
+                var customers = await Mediator.Send(new GetCustomerLookupQuery(Take: 200));
+                _customer = customers.FirstOrDefault(c => c.Id == v.CustomerId);
+            }
+        }
+        else if (CustomerId.HasValue)
+        {
+            _data.CustomerId = CustomerId.Value;
+            var customers = await Mediator.Send(new GetCustomerLookupQuery(Take: 200));
+            _customer = customers.FirstOrDefault(c => c.Id == CustomerId.Value);
+        }
+    }
+
+    private async Task<IEnumerable<LookupItem>> SearchCustomers(string? value, CancellationToken ct) =>
+        await Mediator.Send(new GetCustomerLookupQuery(value), ct);
+
+    private void OnCustomerSelected(LookupItem? c)
+    {
+        _customer = c;
+        _data.CustomerId = c?.Id ?? Guid.Empty;
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            _data.InsuranceExpiration = _insuranceExp.HasValue
+                ? DateOnly.FromDateTime(_insuranceExp.Value)
+                : null;
+
+            var dto = new VehicleUpsertDto(
+                _data.CustomerId, _data.PlateNumber, _data.Vin, _data.Brand, _data.Model,
+                _data.Version, _data.Year, _data.Color, _data.FuelType, _data.Mileage,
+                _data.InsuranceCompanyId, _data.PolicyNumber, _data.InsuranceExpiration,
+                _data.Notes, _data.IsActive);
+
+            if (Id.HasValue)
+                await Mediator.Send(new UpdateVehicleCommand(Id.Value, dto));
+            else
+                await Mediator.Send(new CreateVehicleCommand(dto));
+
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            foreach (var e in ex.Errors)
+                Snackbar.Add(e.ErrorMessage, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally { _saving = false; }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+
+    private class FormModel
+    {
+        public Guid CustomerId { get; set; }
+        public string PlateNumber { get; set; } = string.Empty;
+        public string? Vin { get; set; }
+        public string Brand { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string? Version { get; set; }
+        public int? Year { get; set; }
+        public string? Color { get; set; }
+        public FuelType? FuelType { get; set; }
+        public int? Mileage { get; set; }
+        public Guid? InsuranceCompanyId { get; set; }
+        public string? PolicyNumber { get; set; }
+        public DateOnly? InsuranceExpiration { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

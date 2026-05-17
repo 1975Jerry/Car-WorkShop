@@ -1,0 +1,163 @@
+@page "/customers"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Models
+@using Workshop.Application.Features.Customers
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["Customers"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["Customers"]</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0" Outlined="true">
+    <MudGrid Justify="Justify.FlexStart">
+        <MudItem xs="12" md="5">
+            <MudTextField @bind-Value="_search" Label="@L["Search"]" Variant="Variant.Outlined"
+                          Margin="Margin.Dense" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          DebounceInterval="300" OnDebounceIntervalElapsed="Reload" Clearable />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudSelect T="CustomerType?" @bind-Value="_typeFilter" @bind-Value:after="Reload"
+                       Label="@L["CustomerType"]" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable>
+                <MudSelectItem T="CustomerType?" Value="@((CustomerType?)CustomerType.Individual)">@L["Individual"]</MudSelectItem>
+                <MudSelectItem T="CustomerType?" Value="@((CustomerType?)CustomerType.Company)">@L["Company"]</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <MudSelect T="bool?" @bind-Value="_activeFilter" @bind-Value:after="Reload"
+                       Label="@L["Active"]" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable>
+                <MudSelectItem T="bool?" Value="@((bool?)true)">@L["Active"]</MudSelectItem>
+                <MudSelectItem T="bool?" Value="@((bool?)false)">@L["Inactive"]</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex justify-end">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreate">@L["New"]</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable ServerData="LoadData" T="CustomerListItemDto" Dense Hover Striped
+          @ref="_table" Loading="@_loading">
+    <HeaderContent>
+        <MudTh>@L["CustomerType"]</MudTh>
+        <MudTh>@L["DisplayName"]</MudTh>
+        <MudTh>@L["VatNumber"]</MudTh>
+        <MudTh>@L["MobilePhone"]</MudTh>
+        <MudTh>@L["City"]</MudTh>
+        <MudTh Style="text-align:center">@L["VehiclesCount"]</MudTh>
+        <MudTh Style="text-align:center">@L["Active"]</MudTh>
+        <MudTh Style="width:120px"></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <MudChip T="string" Size="Size.Small"
+                     Color="@(context.CustomerType == CustomerType.Company ? Color.Tertiary : Color.Default)">
+                @(context.CustomerType == CustomerType.Company ? L["Company"] : L["Individual"])
+            </MudChip>
+        </MudTd>
+        <MudTd>@context.DisplayName</MudTd>
+        <MudTd>@context.VatNumber</MudTd>
+        <MudTd>@context.MobilePhone</MudTd>
+        <MudTd>@context.City</MudTd>
+        <MudTd Style="text-align:center">@context.VehicleCount</MudTd>
+        <MudTd Style="text-align:center">
+            @if (context.IsActive)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Block" Color="Color.Default" Size="Size.Small" />
+            }
+        </MudTd>
+        <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                           OnClick="@(() => OpenEdit(context.Id))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                           OnClick="@(() => OpenDelete(context))" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="@(new[] { 25, 50, 100 })" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<CustomerListItemDto>? _table;
+    private string? _search;
+    private CustomerType? _typeFilter;
+    private bool? _activeFilter;
+    private bool _loading;
+
+    private async Task<TableData<CustomerListItemDto>> LoadData(TableState state, CancellationToken ct)
+    {
+        _loading = true;
+        try
+        {
+            var page = state.Page + 1;
+            var result = await Mediator.Send(new ListCustomersQuery(
+                Search: _search,
+                IsActive: _activeFilter,
+                CustomerType: _typeFilter,
+                Page: page,
+                PageSize: state.PageSize), ct);
+            return new TableData<CustomerListItemDto> { Items = result.Items, TotalItems = result.TotalCount };
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task Reload() => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private async Task OpenCreate()
+    {
+        var parameters = new DialogParameters { ["Id"] = (Guid?)null };
+        var dialog = await Dialogs.ShowAsync<CustomerEditDialog>(L["NewCustomer"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result?.Canceled == false) await Reload();
+    }
+
+    private async Task OpenEdit(Guid id)
+    {
+        var parameters = new DialogParameters { ["Id"] = (Guid?)id };
+        var dialog = await Dialogs.ShowAsync<CustomerEditDialog>(L["EditCustomer"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result?.Canceled == false) await Reload();
+    }
+
+    private async Task OpenDelete(CustomerListItemDto c)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"],
+            Message = $"{L["ConfirmDeleteCustomer"]}\n\n{c.DisplayName}",
+            YesText = L["Delete"],
+            CancelText = L["Cancel"]
+        });
+        if (ok == true)
+        {
+            try
+            {
+                await Mediator.Send(new DeleteCustomerCommand(c.Id));
+                Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+                await Reload();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+}

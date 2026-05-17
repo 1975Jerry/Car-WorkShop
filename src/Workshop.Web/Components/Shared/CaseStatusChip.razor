@@ -1,0 +1,42 @@
+@using MudBlazor
+@using Workshop.Domain.Enums
+
+<MudChip T="string" Size="Size.Small" Color="@Color" Variant="Variant.Filled">@Label</MudChip>
+
+@code {
+    [Parameter, EditorRequired] public InsuranceCaseStatus Status { get; set; }
+
+    private Color Color => Status switch
+    {
+        InsuranceCaseStatus.NewCase => MudBlazor.Color.Default,
+        InsuranceCaseStatus.AssessorAppointment => MudBlazor.Color.Info,
+        InsuranceCaseStatus.Assessment => MudBlazor.Color.Info,
+        InsuranceCaseStatus.InsuranceApproval => MudBlazor.Color.Warning,
+        InsuranceCaseStatus.CustomerAssignment => MudBlazor.Color.Warning,
+        InsuranceCaseStatus.PartsApprovalAndOrder => MudBlazor.Color.Tertiary,
+        InsuranceCaseStatus.RepairScheduling => MudBlazor.Color.Tertiary,
+        InsuranceCaseStatus.RepairInProgress => MudBlazor.Color.Primary,
+        InsuranceCaseStatus.RepairCompleted => MudBlazor.Color.Success,
+        InsuranceCaseStatus.Settlement => MudBlazor.Color.Success,
+        InsuranceCaseStatus.PaymentConfirmed => MudBlazor.Color.Success,
+        InsuranceCaseStatus.CaseClosed => MudBlazor.Color.Dark,
+        _ => MudBlazor.Color.Default
+    };
+
+    private string Label => Status switch
+    {
+        InsuranceCaseStatus.NewCase => "Νέος",
+        InsuranceCaseStatus.AssessorAppointment => "Ραντεβού Πραγμ.",
+        InsuranceCaseStatus.Assessment => "Πραγματογνωμοσύνη",
+        InsuranceCaseStatus.InsuranceApproval => "Έγκριση Ασφαλιστικής",
+        InsuranceCaseStatus.CustomerAssignment => "Εκχώρηση Πελάτη",
+        InsuranceCaseStatus.PartsApprovalAndOrder => "Παραγγελία Ανταλλακτικών",
+        InsuranceCaseStatus.RepairScheduling => "Προγραμματισμός",
+        InsuranceCaseStatus.RepairInProgress => "Σε Επισκευή",
+        InsuranceCaseStatus.RepairCompleted => "Ολοκληρώθηκε",
+        InsuranceCaseStatus.Settlement => "Εξοφλητική",
+        InsuranceCaseStatus.PaymentConfirmed => "Πληρώθηκε",
+        InsuranceCaseStatus.CaseClosed => "Κλειστός",
+        _ => Status.ToString()
+    };
+}

@@ -1,0 +1,142 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.RetailParts
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_model.PartName" Label="@L["PartName"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="300" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="PartType" @bind-Value="_model.PartType" Label="@L["PartType"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem T="PartType" Value="PartType.Original">@L["PT_Original"]</MudSelectItem>
+                    <MudSelectItem T="PartType" Value="PartType.NonOEM">@L["PT_NonOEM"]</MudSelectItem>
+                    <MudSelectItem T="PartType" Value="PartType.MTX">@L["PT_MTX"]</MudSelectItem>
+                    <MudSelectItem T="PartType" Value="PartType.Other">@L["PT_Other"]</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="LookupItem" Label="@L["Supplier"]" SearchFunc="SearchSuppliers"
+                                 Value="_supplier" ValueChanged="OnSupplierChanged"
+                                 ToStringFunc="@(x => x?.Label ?? "")" Clearable
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField @bind-Value="_model.Quantity" Label="@L["Quantity"]" Min="0.01m"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Format="0.##" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField @bind-Value="_model.UnitCost" Label="@L["UnitCost"]" Min="0"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Format="0.00" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudField Label="@L["Total"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @((_model.Quantity * _model.UnitCost).ToString("0.00"))
+                </MudField>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="Guid?" @bind-Value="_model.DestinationBranchId" Label="@L["DestinationBranch"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                    @foreach (var b in _branches)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_model.Notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@_saving">@L["Save"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public Guid RetailCaseId { get; set; }
+    [Parameter] public RetailPartLineDto? Existing { get; set; }
+
+    private FormModel _model = new();
+    private LookupItem? _supplier;
+    private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _branches = await Mediator.Send(new GetBranchLookupQuery());
+        if (Existing is not null)
+        {
+            _model = new FormModel
+            {
+                PartName = Existing.PartName,
+                PartType = Existing.PartType,
+                Quantity = Existing.Quantity,
+                UnitCost = Existing.UnitCost,
+                DestinationBranchId = Existing.DestinationBranchId,
+                Notes = Existing.Notes
+            };
+            if (Existing.SupplierId.HasValue)
+            {
+                _supplier = new LookupItem(Existing.SupplierId.Value, Existing.SupplierName ?? "—");
+            }
+        }
+    }
+
+    private async Task<IEnumerable<LookupItem>> SearchSuppliers(string? value, CancellationToken ct) =>
+        await Mediator.Send(new GetSupplierLookupQuery(value), ct);
+
+    private void OnSupplierChanged(LookupItem? s) => _supplier = s;
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_model.PartName) || _model.DestinationBranchId is null
+                || _model.Quantity <= 0)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+            var dto = new RetailPartLineUpsertDto(
+                _supplier?.Id, _model.DestinationBranchId.Value, _model.PartType,
+                _model.PartName, _model.Quantity, _model.UnitCost, _model.Notes);
+
+            if (Existing is null)
+                await Mediator.Send(new CreateRetailPartLineCommand(RetailCaseId, dto));
+            else
+                await Mediator.Send(new UpdateRetailPartLineCommand(Existing.Id, dto));
+
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+
+    private class FormModel
+    {
+        public string PartName { get; set; } = string.Empty;
+        public PartType PartType { get; set; } = PartType.NonOEM;
+        public decimal Quantity { get; set; } = 1m;
+        public decimal UnitCost { get; set; }
+        public Guid? DestinationBranchId { get; set; }
+        public string? Notes { get; set; }
+    }
+}

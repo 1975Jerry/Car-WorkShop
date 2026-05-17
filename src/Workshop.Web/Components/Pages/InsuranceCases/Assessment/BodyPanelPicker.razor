@@ -1,0 +1,170 @@
+@using MudBlazor
+@using Workshop.Application.Features.BodyPanels
+@using Workshop.Domain.Enums
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudPaper Class="pa-3" Outlined Elevation="0">
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+        <MudText Typo="Typo.subtitle1">@L["DamageSelector"]</MudText>
+        <MudToggleGroup T="ViewMode" SelectionMode="SelectionMode.SingleSelection"
+                        @bind-Value="_view" Size="Size.Small" Color="Color.Primary">
+            <MudToggleItem Value="@ViewMode.Diagram">
+                <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Class="mr-1" Size="Size.Small" />
+                @L["DiagramView"]
+            </MudToggleItem>
+            <MudToggleItem Value="@ViewMode.List">
+                <MudIcon Icon="@Icons.Material.Filled.ViewList" Class="mr-1" Size="Size.Small" />
+                @L["ListView"]
+            </MudToggleItem>
+        </MudToggleGroup>
+    </MudStack>
+
+    <MudTextField @bind-Value="_search" Placeholder="@L["FilterPanels"]" Immediate
+                  Variant="Variant.Outlined" Margin="Margin.Dense"
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                  Class="mb-2" />
+
+    <MudStack Row Spacing="2" Class="mb-2">
+        <MudChipSet T="BodyPanelCategory?" SelectedValue="_category" SelectedValueChanged="@(c => _category = c)"
+                    SelectionMode="SelectionMode.SingleSelection">
+            <MudChip T="BodyPanelCategory?" Value="@((BodyPanelCategory?)null)" Text="@L["AllCategories"]" />
+            <MudChip T="BodyPanelCategory?" Value="@((BodyPanelCategory?)BodyPanelCategory.External)" Text="@L["External"]" />
+            <MudChip T="BodyPanelCategory?" Value="@((BodyPanelCategory?)BodyPanelCategory.Internal)" Text="@L["Internal"]" />
+            <MudChip T="BodyPanelCategory?" Value="@((BodyPanelCategory?)BodyPanelCategory.Safety)" Text="@L["Safety"]" />
+        </MudChipSet>
+    </MudStack>
+
+    @if (Panels.Count == 0)
+    {
+        <MudProgressLinear Indeterminate />
+    }
+    else if (_view == ViewMode.Diagram)
+    {
+        <div class="bp-diagram-wrap">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" class="bp-diagram">
+                <!-- Car silhouette: hood/roof/trunk strip down the centerline, side panels around -->
+                <defs>
+                    <linearGradient id="bp-body" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#e3eaf3" />
+                        <stop offset="100%" stop-color="#cfd8e3" />
+                    </linearGradient>
+                </defs>
+                <!-- Outer body -->
+                <rect x="3" y="2" width="94" height="96" rx="14" ry="14"
+                      fill="url(#bp-body)" stroke="#90a4ae" stroke-width="0.4" />
+                <!-- Hood -->
+                <rect x="14" y="14" width="72" height="20" rx="3" ry="3"
+                      fill="#ffffff" stroke="#b0bec5" stroke-width="0.3" />
+                <!-- Windshield -->
+                <path d="M14 34 L86 34 L78 42 L22 42 Z" fill="#b3c5d6" stroke="#90a4ae" stroke-width="0.3" />
+                <!-- Roof -->
+                <rect x="22" y="42" width="56" height="22" rx="3" ry="3"
+                      fill="#ffffff" stroke="#b0bec5" stroke-width="0.3" />
+                <!-- Rear windshield -->
+                <path d="M22 64 L78 64 L86 72 L14 72 Z" fill="#b3c5d6" stroke="#90a4ae" stroke-width="0.3" />
+                <!-- Trunk -->
+                <rect x="14" y="72" width="72" height="14" rx="3" ry="3"
+                      fill="#ffffff" stroke="#b0bec5" stroke-width="0.3" />
+                <!-- Centerline guide (faint) -->
+                <line x1="50" y1="2" x2="50" y2="98" stroke="#cfd8e3" stroke-width="0.2" stroke-dasharray="0.6 0.8" />
+
+                @foreach (var panel in DiagramPanels)
+                {
+                    var dimmed = !MatchesFilters(panel);
+                    var selected = SelectedPanelIds.Contains(panel.Id);
+                    var fill = selected ? "#43a047" : "#1976d2";
+                    var opacity = dimmed ? 0.18 : 1.0;
+                    var cx = (double)panel.DiagramX!.Value;
+                    var cy = (double)panel.DiagramY!.Value;
+                    <g class="bp-hot @(dimmed ? "bp-hot-dim" : "")"
+                       @onclick="@(() => OnPick(panel))">
+                        <title>@panel.Code · @panel.DescriptionGr</title>
+                        <circle cx="@cx.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                cy="@cy.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                r="2.1"
+                                fill="@fill" fill-opacity="@opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                stroke="#ffffff" stroke-width="0.4" />
+                    </g>
+                }
+            </svg>
+
+            @if (!DiagramPanels.Any(MatchesFilters))
+            {
+                <MudAlert Severity="Severity.Info" Dense Class="mt-2">@L["NoDiagramCoords"]</MudAlert>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="max-height: 480px; overflow-y: auto;">
+            <MudList T="BodyPanelDto" Dense ReadOnly>
+                @foreach (var panel in FilteredPanels)
+                {
+                    var isSel = SelectedPanelIds.Contains(panel.Id);
+                    <MudListItem T="BodyPanelDto" Value="@panel"
+                                 Icon="@(isSel ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.AddCircle)"
+                                 IconColor="@(isSel ? Color.Success : Color.Primary)"
+                                 OnClick="@(() => OnPick(panel))">
+                        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Text="@panel.Code" />
+                                <MudText Typo="Typo.body2">@panel.DescriptionGr</MudText>
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@SideLabel(panel.Side)</MudText>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        </div>
+    }
+</MudPaper>
+
+<style>
+    .bp-diagram-wrap { max-width: 420px; margin: 0 auto; }
+    .bp-diagram { width: 100%; height: auto; display: block; }
+    .bp-hot { cursor: pointer; transition: transform 0.08s ease-out; transform-origin: center; transform-box: fill-box; }
+    .bp-hot:hover circle { stroke: #ffeb3b; stroke-width: 0.8; r: 2.6; }
+    .bp-hot-dim { cursor: default; pointer-events: none; }
+</style>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<BodyPanelDto> Panels { get; set; } = Array.Empty<BodyPanelDto>();
+    [Parameter] public EventCallback<BodyPanelDto> OnPanelSelected { get; set; }
+    [Parameter] public IReadOnlyCollection<Guid> SelectedPanelIds { get; set; } = Array.Empty<Guid>();
+
+    private enum ViewMode { Diagram, List }
+
+    private string? _search;
+    private BodyPanelCategory? _category;
+    private ViewMode _view = ViewMode.Diagram;
+
+    private IEnumerable<BodyPanelDto> FilteredPanels => Panels.Where(MatchesFilters);
+
+    private IEnumerable<BodyPanelDto> DiagramPanels =>
+        Panels.Where(p => p.DiagramX.HasValue && p.DiagramY.HasValue);
+
+    private bool MatchesFilters(BodyPanelDto p)
+    {
+        if (_category.HasValue && p.Category != _category) return false;
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var s = _search.Trim();
+            if (!p.Code.Contains(s, StringComparison.OrdinalIgnoreCase)
+                && !p.DescriptionGr.Contains(s, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        return true;
+    }
+
+    private async Task OnPick(BodyPanelDto panel)
+    {
+        if (OnPanelSelected.HasDelegate) await OnPanelSelected.InvokeAsync(panel);
+    }
+
+    private string SideLabel(PanelSide side) => side switch
+    {
+        PanelSide.Left => L["Left"],
+        PanelSide.Right => L["Right"],
+        _ => L["Center"]
+    };
+}

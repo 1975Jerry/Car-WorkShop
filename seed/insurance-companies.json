@@ -1,0 +1,12 @@
+[
+  { "Name": "Ergo Hellas",            "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Interamerican",          "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "NN Hellas",              "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Generali Hellas",        "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Allianz Hellas",         "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Εθνική Ασφαλιστική",     "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Eurolife FFH",           "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Groupama Φοίνιξ",        "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "ΑΓΡΟΤΙΚΗ Ασφαλιστική",   "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null },
+  { "Name": "Υδρόγειος Ασφαλιστική",  "Phone": null, "Email": null, "AddressLine": null, "VatNumber": null }
+]

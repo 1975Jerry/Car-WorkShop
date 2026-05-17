@@ -1,0 +1,26 @@
+@using MudBlazor
+
+<MudCard Elevation="2" Class="@CardClass" Style="@CardStyle" @onclick="HandleClick">
+    <MudCardContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icon" Color="@Color" Size="Size.Large" />
+            <div>
+                <MudText Typo="Typo.overline">@Title</MudText>
+                <MudText Typo="Typo.h4">@Value</MudText>
+            </div>
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Dashboard;
+    [Parameter] public Color Color { get; set; } = Color.Primary;
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private string CardClass => OnClick.HasDelegate ? "kpi-clickable" : string.Empty;
+    private string CardStyle => OnClick.HasDelegate ? "cursor: pointer;" : string.Empty;
+
+    private Task HandleClick() => OnClick.HasDelegate ? OnClick.InvokeAsync() : Task.CompletedTask;
+}

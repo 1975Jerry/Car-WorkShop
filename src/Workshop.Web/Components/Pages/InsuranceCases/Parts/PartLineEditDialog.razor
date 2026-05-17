@@ -1,0 +1,178 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.InsuranceParts
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudTextField @bind-Value="_data.PartName" Label="@L["PartName"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSelect T="PartType" @bind-Value="_data.PartType" Label="@L["PartType"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                    <MudSelectItem Value="@PartType.Original">@L["PT_Original"]</MudSelectItem>
+                    <MudSelectItem Value="@PartType.NonOEM">@L["PT_NonOEM"]</MudSelectItem>
+                    <MudSelectItem Value="@PartType.MTX">@L["PT_MTX"]</MudSelectItem>
+                    <MudSelectItem Value="@PartType.Other">@L["PT_Other"]</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="6" md="4">
+                <MudNumericField T="decimal" @bind-Value="_data.Quantity" Label="@L["Quantity"]"
+                                 Min="0.01m" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6" md="4">
+                <MudNumericField T="decimal" @bind-Value="_data.UnitCost" Label="@L["UnitCost"]"
+                                 Min="0" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6" md="4">
+                <MudNumericField T="decimal?" @bind-Value="_data.DiscountPct" Label="@L["DiscountPct"]"
+                                 Min="0" Max="100" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudSelect T="Guid?" @bind-Value="_data.SupplierId" Label="@L["Supplier"]" Clearable
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var s in _suppliers)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)s.Id)">@s.Label</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="Guid" @bind-Value="_data.DestinationBranchId" Label="@L["DestinationBranch"]" Required
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var b in _branches)
+                    {
+                        <MudSelectItem Value="@b.Id">@b.Label</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudSelect T="AvailabilityStatus" @bind-Value="_data.AvailabilityStatus"
+                           Label="@L["Availability"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value="@AvailabilityStatus.Available">@L["AV_Available"]</MudSelectItem>
+                    <MudSelectItem Value="@AvailabilityStatus.OutOfStock">@L["AV_OutOfStock"]</MudSelectItem>
+                    <MudSelectItem Value="@AvailabilityStatus.Discontinued">@L["AV_Discontinued"]</MudSelectItem>
+                    <MudSelectItem Value="@AvailabilityStatus.Unknown">@L["AV_Unknown"]</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSwitch T="bool" @bind-Value="_data.InsuranceApproved" Color="Color.Primary"
+                           Label="@L["InsuranceApproved"]" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@_saving">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+
+    [Parameter] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public InsurancePartLineDto? Existing { get; set; }
+
+    private FormModel _data = new();
+    private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
+    private IReadOnlyList<LookupItem> _suppliers = Array.Empty<LookupItem>();
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _branches = await Mediator.Send(new GetBranchLookupQuery());
+        _suppliers = await Mediator.Send(new GetSupplierLookupQuery());
+        if (Existing is not null)
+        {
+            _data.PartName = Existing.PartName;
+            _data.PartType = Existing.PartType;
+            _data.Quantity = Existing.Quantity;
+            _data.UnitCost = Existing.UnitCost;
+            _data.DiscountPct = Existing.DiscountPct;
+            _data.SupplierId = Existing.SupplierId;
+            _data.DestinationBranchId = Existing.DestinationBranchId;
+            _data.AvailabilityStatus = Existing.AvailabilityStatus;
+            _data.InsuranceApproved = Existing.InsuranceApproved;
+            _data.Notes = Existing.Notes;
+        }
+        else if (_branches.Count > 0)
+        {
+            _data.DestinationBranchId = _branches[0].Id;
+        }
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_data.PartName) || _data.DestinationBranchId == Guid.Empty)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+
+            var dto = new InsurancePartLineUpsertDto(
+                _data.SupplierId,
+                _data.DestinationBranchId,
+                _data.PartType,
+                _data.PartName,
+                _data.Quantity,
+                _data.UnitCost,
+                _data.DiscountPct,
+                _data.AvailabilityStatus,
+                _data.InsuranceApproved,
+                _data.Notes);
+
+            if (Existing is null)
+                await Mediator.Send(new CreateInsurancePartLineCommand(InsuranceCaseId, dto));
+            else
+                await Mediator.Send(new UpdateInsurancePartLineCommand(Existing.Id, dto));
+
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally { _saving = false; }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+
+    private class FormModel
+    {
+        public string PartName { get; set; } = "";
+        public PartType PartType { get; set; } = PartType.Original;
+        public decimal Quantity { get; set; } = 1;
+        public decimal UnitCost { get; set; }
+        public decimal? DiscountPct { get; set; }
+        public Guid? SupplierId { get; set; }
+        public Guid DestinationBranchId { get; set; }
+        public AvailabilityStatus AvailabilityStatus { get; set; } = AvailabilityStatus.Available;
+        public bool InsuranceApproved { get; set; }
+        public string? Notes { get; set; }
+    }
+}

@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: workshop-postgres
+    environment:
+      POSTGRES_DB: workshop_dev
+      POSTGRES_USER: workshop
+      POSTGRES_PASSWORD: workshop
+    ports:
+      - "5432:5432"
+    volumes:
+      - workshop-pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "workshop", "-d", "workshop_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: workshop-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@paintbull.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Start with: docker compose --profile app up --build
+  # Omit the profile to get just postgres + pgadmin (the historical dev setup).
+  web:
+    profiles: ["app"]
+    build:
+      context: .
+    container_name: workshop-web
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__WorkshopDb: "Host=postgres;Port=5432;Database=workshop_dev;Username=workshop;Password=workshop"
+    ports:
+      - "8080:8080"
+    volumes:
+      - workshop-uploads:/app/wwwroot/uploads
+      - workshop-logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  workshop-pgdata:
+  workshop-uploads:
+  workshop-logs:

@@ -1,0 +1,181 @@
+@page "/cases/insurance/new"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.InsuranceCases
+@using Workshop.Application.Features.Vehicles
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["NewInsuranceCase"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["NewInsuranceCase"]</MudText>
+
+<MudPaper Class="pa-4" Elevation="0" Outlined>
+    <MudText Typo="Typo.h6" Class="mb-2">@L["CaseDetails"]</MudText>
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
+                             Value="_customer" ValueChanged="OnCustomerChanged"
+                             ToStringFunc="@(x => x?.Label ?? "")"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Required
+                             ShowProgressIndicator />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="Guid?" @bind-Value="_data.VehicleId" Label="@L["Vehicle"]"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Required Disabled="@(_customer is null)">
+                @foreach (var v in _vehicles)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)v.Id)">@v.PlateNumber — @v.Brand @v.Model</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="Guid?" @bind-Value="_data.BranchId" Label="@L["Branch"]"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                @foreach (var b in _branches)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="Guid?" @bind-Value="_data.InsuranceCompanyId" Label="@L["InsuranceCompany"]"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                @foreach (var ic in _companies)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)ic.Id)">@ic.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_data.ClaimNumber" Label="@L["ClaimNumber"]"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudDatePicker @bind-Date="_accidentDate" Label="@L["AccidentDate"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudNumericField @bind-Value="_data.MileageAtAssessment" Label="@L["Mileage"]" Min="0"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="CasePriority?" @bind-Value="_data.Priority" Label="@L["Priority"]" Clearable
+                       Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Low)">Low</MudSelectItem>
+                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Normal)">Normal</MudSelectItem>
+                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.High)">High</MudSelectItem>
+                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Urgent)">Urgent</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12"><MudDivider Class="my-2" /><MudText Typo="Typo.h6">@L["Driver"]</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["DriverHint"]</MudText>
+        </MudItem>
+        <MudItem xs="6">
+            <MudTextField @bind-Value="_data.DriverFirstName" Label="@L["FirstName"]"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudTextField @bind-Value="_data.DriverLastName" Label="@L["LastName"]"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudTextField @bind-Value="_data.DriverPhone" Label="@L["Phone"]"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudTextField @bind-Value="_data.DriverEmail" Label="@L["Email"]" InputType="InputType.Email"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="3"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row Class="mt-4" Justify="Justify.FlexEnd">
+        <MudButton OnClick="@(() => Nav.NavigateTo("/cases/insurance"))">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@_saving">@L["Create"]</MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private FormModel _data = new();
+    private LookupItem? _customer;
+    private DateTime? _accidentDate;
+    private bool _saving;
+    private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
+    private IReadOnlyList<LookupItem> _companies = Array.Empty<LookupItem>();
+    private IReadOnlyList<VehicleListItemDto> _vehicles = Array.Empty<VehicleListItemDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _branches = await Mediator.Send(new GetBranchLookupQuery());
+        _companies = await Mediator.Send(new GetInsuranceCompanyLookupQuery());
+    }
+
+    private async Task<IEnumerable<LookupItem>> SearchCustomers(string? value, CancellationToken ct) =>
+        await Mediator.Send(new GetCustomerLookupQuery(value), ct);
+
+    private async Task OnCustomerChanged(LookupItem? c)
+    {
+        _customer = c;
+        _data.CustomerId = c?.Id ?? Guid.Empty;
+        _data.VehicleId = null;
+        if (c is null) { _vehicles = Array.Empty<VehicleListItemDto>(); return; }
+        var page = await Mediator.Send(new ListVehiclesQuery(CustomerId: c.Id, PageSize: 100));
+        _vehicles = page.Items;
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            if (_data.CustomerId == Guid.Empty || _data.VehicleId is null
+                || _data.BranchId is null || _data.InsuranceCompanyId is null)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+
+            var dto = new InsuranceCaseUpsertDto(
+                _data.CustomerId, _data.VehicleId.Value, _data.BranchId.Value, _data.InsuranceCompanyId.Value,
+                _data.ClaimNumber, _data.Priority, AssessorId: null, AdjusterId: null, AssignedUserId: null,
+                _data.DriverFirstName, _data.DriverLastName, _data.DriverPhone, _data.DriverEmail,
+                _accidentDate is null ? null : DateOnly.FromDateTime(_accidentDate.Value),
+                _data.MileageAtAssessment, _data.Notes);
+
+            var id = await Mediator.Send(new CreateInsuranceCaseCommand(dto));
+            Snackbar.Add(L["CaseCreated"], Severity.Success);
+            Nav.NavigateTo($"/cases/insurance/{id}");
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private class FormModel
+    {
+        public Guid CustomerId { get; set; }
+        public Guid? VehicleId { get; set; }
+        public Guid? BranchId { get; set; }
+        public Guid? InsuranceCompanyId { get; set; }
+        public string? ClaimNumber { get; set; }
+        public CasePriority? Priority { get; set; }
+        public string? DriverFirstName { get; set; }
+        public string? DriverLastName { get; set; }
+        public string? DriverPhone { get; set; }
+        public string? DriverEmail { get; set; }
+        public int? MileageAtAssessment { get; set; }
+        public string? Notes { get; set; }
+    }
+}

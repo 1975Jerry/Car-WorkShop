@@ -1,0 +1,70 @@
+@inherits LayoutComponentBase
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudThemeProvider Theme="@Workshop.Web.Theme.PaintBullTheme.Light" IsDarkMode="@_isDark" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="2" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" OnClick="ToggleDrawer" Edge="Edge.Start" />
+        <MudText Typo="Typo.h6" Class="ms-3">Paint Bull</MudText>
+        <MudSpacer />
+        <MudSelect T="string" Value="@_branchSelected" ValueChanged="OnBranchChanged" Dense Margin="Margin.None" Variant="Variant.Outlined" Style="max-width:200px; background:white; border-radius:4px;">
+            <MudSelectItem Value="@("all")">@L["AllBranches"]</MudSelectItem>
+            <MudSelectItem Value="@("tavros")">Tavros</MudSelectItem>
+        </MudSelect>
+        <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit">
+            <MudMenuItem OnClick="@(() => SetLang("el"))">Ελληνικά</MudMenuItem>
+            <MudMenuItem OnClick="@(() => SetLang("en"))">English</MudMenuItem>
+        </MudMenu>
+        <MudIconButton Icon="@(_isDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" Color="Color.Inherit" OnClick="@(() => _isDark = !_isDark)" />
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit">
+                    <MudText Class="px-4 py-2" Typo="Typo.body2">@context.User.Identity?.Name</MudText>
+                    <MudDivider />
+                    <MudMenuItem Href="/Account/Logout" ForceLoad>@L["SignOut"]</MudMenuItem>
+                </MudMenu>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Variant="DrawerVariant.Mini" OpenMiniOnHover Anchor="Anchor.Left">
+        <MudNavMenu>
+            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">@L["Dashboard"]</MudNavLink>
+            <MudNavLink Href="/cases/insurance" Icon="@Icons.Material.Filled.Folder">@L["InsuranceCases"]</MudNavLink>
+            <MudNavLink Href="/cases/retail" Icon="@Icons.Material.Filled.Store">@L["RetailCases"]</MudNavLink>
+            <MudNavLink Href="/customers" Icon="@Icons.Material.Filled.People">@L["Customers"]</MudNavLink>
+            <MudNavLink Href="/vehicles" Icon="@Icons.Material.Filled.DirectionsCar">@L["Vehicles"]</MudNavLink>
+            <MudNavLink Href="/parts" Icon="@Icons.Material.Filled.Build">@L["Parts"]</MudNavLink>
+            <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.Settings">@L["Admin"]</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDark;
+    private string _branchSelected = "all";
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+    private void OnBranchChanged(string value) => _branchSelected = value;
+
+    private void SetLang(string lang)
+    {
+        // Persists culture via cookie middleware on next request
+        var uri = new Uri(NavigationManager.Uri).GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+        var cookie = Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(new(System.Globalization.CultureInfo.GetCultureInfo(lang)));
+        NavigationManager.NavigateTo($"/api/culture?culture={lang}&redirectUri={Uri.EscapeDataString(uri)}", forceLoad: true);
+    }
+
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+}

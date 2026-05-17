@@ -1,0 +1,145 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Payments
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudPaper Class="pa-3 mb-3" Outlined Elevation="0">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">@L["SettlementSummary"]</MudText>
+        <MudGrid>
+            <MudItem xs="6" md="3"><Field Label="@L["AgreedAmount"]" Value="@_summary.AgreedAmount.ToString("0.00")" /></MudItem>
+            <MudItem xs="6" md="3"><Field Label="@L["TotalPaid"]" Value="@_summary.TotalPaid.ToString("0.00")" /></MudItem>
+            <MudItem xs="6" md="3"><Field Label="@L["RemainingBalance"]" Value="@_summary.RemainingBalance.ToString("0.00")" /></MudItem>
+            <MudItem xs="6" md="3">
+                <Field Label="@L["DocsSentToInsurance"]" Value="@_summary.RequiredDocumentsSentCount.ToString()" />
+            </MudItem>
+        </MudGrid>
+        @if (_summary.IsFullyPaid)
+        {
+            <MudAlert Severity="Severity.Success" Dense Class="mt-2">@L["FullyPaid"]</MudAlert>
+        }
+        else if (_summary.AgreedAmount > 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense Class="mt-2">@L["AwaitingFullPayment"]</MudAlert>
+        }
+    </MudPaper>
+
+    <MudPaper Class="pa-3" Outlined Elevation="0">
+        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+            <MudText Typo="Typo.subtitle1">@L["Payments"] (@_payments.Count)</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="AddPayment">@L["AddPayment"]</MudButton>
+        </MudStack>
+
+        @if (_payments.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense>@L["NoPaymentsYet"]</MudAlert>
+        }
+        else
+        {
+            <MudSimpleTable Dense Hover Striped Bordered>
+                <thead>
+                    <tr>
+                        <th>@L["PaymentDate"]</th>
+                        <th>@L["PaymentMethod"]</th>
+                        <th>@L["Payer"]</th>
+                        <th>@L["Reference"]</th>
+                        <th style="text-align:right;">@L["Amount"]</th>
+                        <th style="width: 60px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _payments)
+                    {
+                        <tr>
+                            <td>@p.PaymentDate.ToString("yyyy-MM-dd")</td>
+                            <td>@PaymentMethodLabel(p.PaymentMethod)</td>
+                            <td>@(p.Payer ?? "—")</td>
+                            <td>@(p.ReferenceNumber ?? "—")</td>
+                            <td style="text-align:right;"><strong>@p.Amount.ToString("0.00")</strong></td>
+                            <td>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" OnClick="@(() => DeletePayment(p))" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="text-align: right;"><strong>@L["TotalPaid"]</strong></td>
+                        <td style="text-align: right;"><strong>@_summary.TotalPaid.ToString("0.00")</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </MudSimpleTable>
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private IReadOnlyList<PaymentDto> _payments = Array.Empty<PaymentDto>();
+    private CaseSettlementSummaryDto _summary = new(0, 0, 0, false, 0);
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _payments = await Mediator.Send(new GetPaymentsForCaseQuery(InsuranceCaseId));
+        _summary = await Mediator.Send(new GetCaseSettlementSummaryQuery(InsuranceCaseId));
+        _loading = false;
+    }
+
+    private async Task AddPayment()
+    {
+        var parameters = new DialogParameters
+        {
+            ["InsuranceCaseId"] = InsuranceCaseId,
+            ["RemainingBalance"] = _summary.RemainingBalance
+        };
+        var dlg = await Dialogs.ShowAsync<PaymentDialog>(L["AddPayment"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false }) await Refresh();
+    }
+
+    private async Task DeletePayment(PaymentDto p)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"],
+            Message = L["ConfirmDeletePayment"],
+            YesText = L["Delete"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+        try
+        {
+            await Mediator.Send(new DeletePaymentCommand(p.Id));
+            Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task Refresh()
+    {
+        await Reload();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private string PaymentMethodLabel(PaymentMethod m) => L[$"PM_{m}"];
+}

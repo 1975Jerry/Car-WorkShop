@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Workshop.Api/Workshop.Api.csproj" />
+    <Project Path="src/Workshop.Application/Workshop.Application.csproj" />
+    <Project Path="src/Workshop.Domain/Workshop.Domain.csproj" />
+    <Project Path="src/Workshop.Infrastructure/Workshop.Infrastructure.csproj" />
+    <Project Path="src/Workshop.Portal.Customer/Workshop.Portal.Customer.csproj" />
+    <Project Path="src/Workshop.Portal.Insurance/Workshop.Portal.Insurance.csproj" />
+    <Project Path="src/Workshop.Portal.Supplier/Workshop.Portal.Supplier.csproj" />
+    <Project Path="src/Workshop.Web/Workshop.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Workshop.Application.Tests/Workshop.Application.Tests.csproj" />
+    <Project Path="tests/Workshop.Domain.Tests/Workshop.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

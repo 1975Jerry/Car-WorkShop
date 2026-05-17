@@ -1,0 +1,184 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Documents
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+        <MudText Typo="Typo.subtitle1">@L["Documents"] (@_docs.Count)</MudText>
+        <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+            <MudSelect T="DocumentType" @bind-Value="_uploadType"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width: 220px;">
+                @foreach (var t in AllDocumentTypes)
+                {
+                    <MudSelectItem Value="@t">@DocTypeLabel(t)</MudSelectItem>
+                }
+            </MudSelect>
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                           FilesChanged="OnFilesSelected"
+                           MaximumFileCount="5">
+                <ActivatorContent>
+                    <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Upload">
+                        @L["Upload"]
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+        </MudStack>
+    </MudStack>
+
+    @if (_uploading)
+    {
+        <MudProgressLinear Indeterminate Color="Color.Primary" Class="mb-2" />
+    }
+
+    @if (_docs.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">@L["NoDocumentsYet"]</MudAlert>
+    }
+    else
+    {
+        <MudSimpleTable Dense Hover Striped Bordered>
+            <thead>
+                <tr>
+                    <th>@L["DocumentType"]</th>
+                    <th>@L["FileName"]</th>
+                    <th>@L["UploadedBy"]</th>
+                    <th>@L["UploadedAt"]</th>
+                    <th style="text-align:right;">@L["Size"]</th>
+                    <th>@L["SentToInsurance"]</th>
+                    <th style="width: 100px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in _docs)
+                {
+                    <tr>
+                        <td>@DocTypeLabel(d.DocumentType)</td>
+                        <td>
+                            <a href="/@d.FilePath" target="_blank" rel="noopener">@d.FileName</a>
+                        </td>
+                        <td>@d.UploadedByName</td>
+                        <td>@d.UploadedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td style="text-align:right;">@FormatSize(d.SizeBytes)</td>
+                        <td>
+                            <MudSwitch T="bool" Value="d.SentToInsurance"
+                                       ValueChanged="@(v => ToggleSent(d, v))"
+                                       Color="Color.Success" />
+                            @if (d.SentToInsurance && d.SentToInsuranceAt is not null)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @d.SentToInsuranceAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                </MudText>
+                            }
+                        </td>
+                        <td>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                           Size="Size.Small" OnClick="@(() => DeleteDoc(d))" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private bool _uploading;
+    private IReadOnlyList<DocumentDto> _docs = Array.Empty<DocumentDto>();
+    private DocumentType _uploadType = DocumentType.CaseForm;
+
+    private static readonly DocumentType[] AllDocumentTypes = Enum.GetValues<DocumentType>();
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _docs = await Mediator.Send(new GetDocumentsForCaseQuery(InsuranceCaseId));
+        _loading = false;
+    }
+
+    private async Task OnFilesSelected(IReadOnlyList<IBrowserFile>? files)
+    {
+        if (files is null || files.Count == 0) return;
+        _uploading = true;
+        try
+        {
+            foreach (var f in files)
+            {
+                if (f.Size > 20L * 1024 * 1024)
+                {
+                    Snackbar.Add(string.Format(L["FileTooLarge"], f.Name), Severity.Warning);
+                    continue;
+                }
+                await using var stream = f.OpenReadStream(20L * 1024 * 1024);
+                var input = new UploadDocumentInput(
+                    DocumentOwnerKind.InsuranceCase, InsuranceCaseId,
+                    _uploadType, f.Name, f.ContentType, f.Size);
+                await Mediator.Send(new UploadDocumentCommand(input, stream));
+            }
+            Snackbar.Add(L["UploadedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _uploading = false; }
+    }
+
+    private async Task ToggleSent(DocumentDto d, bool sent)
+    {
+        try
+        {
+            await Mediator.Send(new MarkDocumentSentToInsuranceCommand(d.Id, sent));
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task DeleteDoc(DocumentDto d)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"],
+            Message = L["ConfirmDeleteDocument"],
+            YesText = L["Delete"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+        try
+        {
+            await Mediator.Send(new DeleteDocumentCommand(d.Id));
+            Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task Refresh()
+    {
+        await Reload();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private string DocTypeLabel(DocumentType t) => L[$"DT_{t}"];
+
+    private static string FormatSize(long bytes) =>
+        bytes < 1024 ? $"{bytes} B"
+        : bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB"
+        : $"{bytes / 1024d / 1024d:0.#} MB";
+}

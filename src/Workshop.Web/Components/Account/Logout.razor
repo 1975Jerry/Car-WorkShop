@@ -1,0 +1,16 @@
+@page "/Account/Logout"
+@attribute [Microsoft.AspNetCore.Components.ExcludeFromInteractiveRouting]
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Identity
+@using Workshop.Domain.Entities.Identity
+@inject SignInManager<User> SignInManager
+@inject NavigationManager Nav
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await SignInManager.SignOutAsync();
+        Nav.NavigateTo("/Account/Login", forceLoad: true);
+    }
+}

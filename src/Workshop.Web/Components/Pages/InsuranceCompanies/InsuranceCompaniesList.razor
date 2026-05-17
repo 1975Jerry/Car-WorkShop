@@ -1,0 +1,113 @@
+@page "/admin/insurance-companies"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.InsuranceCompanies
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["InsuranceCompanies"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["InsuranceCompanies"]</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0" Outlined="true">
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudTextField @bind-Value="_search" Label="@L["Search"]" Variant="Variant.Outlined"
+                          Margin="Margin.Dense" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          DebounceInterval="300" OnDebounceIntervalElapsed="Reload" Clearable />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex justify-end">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreate">@L["New"]</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable ServerData="LoadData" T="InsuranceCompanyListItemDto" Dense Hover Striped @ref="_table">
+    <HeaderContent>
+        <MudTh>@L["Name"]</MudTh>
+        <MudTh>@L["VatNumber"]</MudTh>
+        <MudTh>@L["Phone"]</MudTh>
+        <MudTh>@L["Email"]</MudTh>
+        <MudTh Style="text-align:center">@L["Cases"]</MudTh>
+        <MudTh Style="text-align:center">@L["Active"]</MudTh>
+        <MudTh Style="width:120px"></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Name</MudTd>
+        <MudTd>@context.VatNumber</MudTd>
+        <MudTd>@context.Phone</MudTd>
+        <MudTd>@context.Email</MudTd>
+        <MudTd Style="text-align:center">@context.CaseCount</MudTd>
+        <MudTd Style="text-align:center">
+            @if (context.IsActive)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Block" Color="Color.Default" Size="Size.Small" />
+            }
+        </MudTd>
+        <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                           OnClick="@(() => OpenEdit(context.Id))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                           OnClick="@(() => OpenDelete(context))" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="@(new[] { 25, 50, 100 })" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<InsuranceCompanyListItemDto>? _table;
+    private string? _search;
+
+    private async Task<TableData<InsuranceCompanyListItemDto>> LoadData(TableState state, CancellationToken ct)
+    {
+        var r = await Mediator.Send(new ListInsuranceCompaniesQuery(
+            Search: _search, Page: state.Page + 1, PageSize: state.PageSize), ct);
+        return new TableData<InsuranceCompanyListItemDto> { Items = r.Items, TotalItems = r.TotalCount };
+    }
+
+    private Task Reload() => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private async Task OpenCreate()
+    {
+        var d = await Dialogs.ShowAsync<InsuranceCompanyEditDialog>(L["NewInsuranceCompany"],
+            new DialogParameters { ["Id"] = (Guid?)null },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        if ((await d.Result)?.Canceled == false) await Reload();
+    }
+
+    private async Task OpenEdit(Guid id)
+    {
+        var d = await Dialogs.ShowAsync<InsuranceCompanyEditDialog>(L["EditInsuranceCompany"],
+            new DialogParameters { ["Id"] = (Guid?)id },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        if ((await d.Result)?.Canceled == false) await Reload();
+    }
+
+    private async Task OpenDelete(InsuranceCompanyListItemDto c)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"], Message = c.Name,
+            YesText = L["Delete"], CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+        try
+        {
+            await Mediator.Send(new DeleteInsuranceCompanyCommand(c.Id));
+            Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+            await Reload();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+}

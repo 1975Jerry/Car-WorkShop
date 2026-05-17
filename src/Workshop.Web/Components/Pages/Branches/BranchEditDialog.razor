@@ -1,0 +1,109 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Branches
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="8">
+                <MudTextField @bind-Value="_data.Name" Label="@L["Name"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="4">
+                <MudTextField @bind-Value="_data.Code" Label="@L["Code"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_data.AddressLine" Label="@L["Address"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="8">
+                <MudTextField @bind-Value="_data.City" Label="@L["City"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="4">
+                <MudTextField @bind-Value="_data.PostalCode" Label="@L["PostalCode"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="8">
+                <MudTextField @bind-Value="_data.Phone" Label="@L["Phone"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="4">
+                <MudSwitch T="bool" @bind-Value="_data.IsActive" Color="Color.Success" Label="@L["Active"]" />
+            </MudItem>
+            <MudItem xs="12"><MudDivider Class="my-2" /><MudText Typo="Typo.subtitle2">@L["Warehouse"]</MudText></MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.WarehouseName" Label="@L["WarehouseName"]" Required
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_data.WarehouseDescription" Label="@L["WarehouseDescription"]"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => Dialog.Cancel())">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_saving">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Guid? Id { get; set; }
+    private bool _saving;
+    private FormModel _data = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Id.HasValue) return;
+        var b = await Mediator.Send(new GetBranchByIdQuery(Id.Value));
+        if (b is null) return;
+        _data = new FormModel
+        {
+            Name = b.Name, Code = b.Code, AddressLine = b.AddressLine, City = b.City,
+            PostalCode = b.PostalCode, Phone = b.Phone, IsActive = b.IsActive,
+            WarehouseName = b.WarehouseName, WarehouseDescription = b.WarehouseDescription
+        };
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            var dto = new BranchUpsertDto(_data.Name, _data.Code, _data.AddressLine, _data.City,
+                _data.PostalCode, _data.Phone, _data.IsActive,
+                _data.WarehouseName, _data.WarehouseDescription);
+
+            if (Id.HasValue) await Mediator.Send(new UpdateBranchCommand(Id.Value, dto));
+            else await Mediator.Send(new CreateBranchCommand(dto));
+
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private class FormModel
+    {
+        public string Name { get; set; } = "";
+        public string Code { get; set; } = "";
+        public string AddressLine { get; set; } = "";
+        public string City { get; set; } = "";
+        public string? PostalCode { get; set; }
+        public string? Phone { get; set; }
+        public bool IsActive { get; set; } = true;
+        public string WarehouseName { get; set; } = "";
+        public string? WarehouseDescription { get; set; }
+    }
+}

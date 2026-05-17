@@ -1,0 +1,310 @@
+@page "/"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.Dashboard
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["Dashboard"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["Dashboard"]</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["OpenInsuranceCases"]" Value="@_kpis.OpenInsuranceCases.ToString()"
+                     Icon="@Icons.Material.Filled.Folder" Color="Color.Info"
+                     OnClick="@(() => Nav.NavigateTo("/cases/insurance"))" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["OpenRetailCases"]" Value="@_kpis.OpenRetailCases.ToString()"
+                     Icon="@Icons.Material.Filled.Store" Color="Color.Primary"
+                     OnClick="@(() => Nav.NavigateTo("/cases/retail"))" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["PendingParts"]" Value="@_kpis.PendingParts.ToString()"
+                     Icon="@Icons.Material.Filled.Inventory2" Color="Color.Warning" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["RepairsScheduledToday"]" Value="@_kpis.RepairsScheduledToday.ToString()"
+                     Icon="@Icons.Material.Filled.Today" Color="Color.Secondary" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["RepairsInProgress"]" Value="@_kpis.RepairsInProgress.ToString()"
+                     Icon="@Icons.Material.Filled.Build" Color="Color.Tertiary" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["AvgCycleTime"]"
+                     Value="@(_kpis.AvgCycleTimeDays is null ? "—" : $"{_kpis.AvgCycleTimeDays.Value:0.#}{L["DaysShort"]}")"
+                     Icon="@Icons.Material.Filled.Timelapse" Color="Color.Dark" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Class="mt-4">
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                    <MudText Typo="Typo.h6">@L["ThroughputTrend"]</MudText>
+                    <MudStack Row Spacing="3" AlignItems="AlignItems.Center">
+                        <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                            <span class="dash-legend-dot dash-legend-opened"></span>
+                            <MudText Typo="Typo.caption">@L["OpenedCases"]</MudText>
+                        </MudStack>
+                        <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                            <span class="dash-legend-dot dash-legend-closed"></span>
+                            <MudText Typo="Typo.caption">@L["ClosedCases"]</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+
+                @if (_throughput.Count == 0 || _throughput.All(r => r.Opened == 0 && r.Closed == 0))
+                {
+                    <MudAlert Severity="Severity.Info" Dense>@L["NoData"]</MudAlert>
+                }
+                else
+                {
+                    <MudChart ChartType="ChartType.Bar"
+                              ChartSeries="@_throughputSeries"
+                              ChartLabels="@_throughputLabels"
+                              LegendPalette="_throughputPalette"
+                              Height="260px" />
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4" Outlined Elevation="0" Style="height: 100%;">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["RevenueLast30Days"]</MudText>
+                <MudText Typo="Typo.h3" Color="Color.Success">
+                    @_revenue.CurrentPeriodAmount.ToString("N0") €
+                </MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @string.Format(L["PaymentsCount"], _revenue.CurrentPeriodCount)
+                </MudText>
+                <MudDivider Class="my-3" />
+                <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@(_revenue.CurrentPeriodAmount >= _revenue.PreviousPeriodAmount
+                                      ? Icons.Material.Filled.TrendingUp
+                                      : Icons.Material.Filled.TrendingDown)"
+                             Color="@(_revenue.CurrentPeriodAmount >= _revenue.PreviousPeriodAmount
+                                      ? Color.Success : Color.Error)" />
+                    <MudText Typo="Typo.body2">
+                        @RevenueDeltaLabel — @L["VsPreviousPeriod"] (@_revenue.PreviousPeriodAmount.ToString("N0") €)
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["TodaySchedule"]</MudText>
+                @if (_today.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense>@L["NoRepairsScheduled"]</MudAlert>
+                }
+                else
+                {
+                    <MudSimpleTable Dense Hover Striped Bordered>
+                        <thead>
+                            <tr>
+                                <th>@L["ScheduledTime"]</th>
+                                <th>@L["CaseNumber"]</th>
+                                <th>@L["Vehicle"]</th>
+                                <th>@L["Customer"]</th>
+                                <th>@L["Technician"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in _today)
+                            {
+                                <tr style="cursor: pointer;"
+                                    @onclick="@(() => Nav.NavigateTo(t.IsRetail
+                                        ? $"/cases/retail/{t.CaseId}"
+                                        : $"/cases/insurance/{t.CaseId}"))">
+                                    <td>@(t.ScheduledTime?.ToString("HH:mm") ?? "—")</td>
+                                    <td><strong>@t.CaseNumber</strong></td>
+                                    <td>
+                                        <MudText Typo="Typo.body2">@t.Plate</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@t.VehicleBrandModel</MudText>
+                                    </td>
+                                    <td>@t.CustomerLabel</td>
+                                    <td>@(t.TechnicianName ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["BranchBreakdown"]</MudText>
+                @if (_branches.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense>@L["NoData"]</MudAlert>
+                }
+                else
+                {
+                    <MudSimpleTable Dense Hover Striped Bordered>
+                        <thead>
+                            <tr>
+                                <th>@L["Branch"]</th>
+                                <th style="text-align:right;">@L["InsuranceCases"]</th>
+                                <th style="text-align:right;">@L["RetailCases"]</th>
+                                <th style="text-align:right;">@L["RepairsInProgress"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var b in _branches)
+                            {
+                                <tr>
+                                    <td>@b.BranchName</td>
+                                    <td style="text-align:right;">@b.InsuranceCases</td>
+                                    <td style="text-align:right;">@b.RetailCases</td>
+                                    <td style="text-align:right;">@b.RepairsInProgress</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["AgingBuckets"]</MudText>
+                <MudSimpleTable Dense Hover Striped Bordered>
+                    <thead>
+                        <tr>
+                            <th>@L["DaysOld"]</th>
+                            <th style="text-align:right;">@L["InsuranceCases"]</th>
+                            <th style="text-align:right;">@L["RetailCases"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in _aging)
+                        {
+                            <tr>
+                                <td>@a.BucketLabel</td>
+                                <td style="text-align:right;">@a.InsuranceCases</td>
+                                <td style="text-align:right;">@a.RetailCases</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["PartsVariance"]</MudText>
+                @if (_variance.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense>@L["NoData"]</MudAlert>
+                }
+                else
+                {
+                    <MudSimpleTable Dense Hover Striped Bordered>
+                        <thead>
+                            <tr>
+                                <th>@L["CaseNumber"]</th>
+                                <th style="text-align:right;">@L["ApprovedAmount"]</th>
+                                <th style="text-align:right;">@L["PartsCost"]</th>
+                                <th style="text-align:right;">@L["Variance"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in _variance)
+                            {
+                                <tr style="cursor: pointer;"
+                                    @onclick="@(() => Nav.NavigateTo($"/cases/insurance/{v.InsuranceCaseId}"))">
+                                    <td><strong>@v.CaseNumber</strong></td>
+                                    <td style="text-align:right;">@v.ApprovedAmount.ToString("N2")</td>
+                                    <td style="text-align:right;">@v.PartsCost.ToString("N2")</td>
+                                    <td style="text-align:right;">
+                                        <MudText Inline Color="@(v.Variance > 0 ? Color.Error : Color.Success)">
+                                            @v.Variance.ToString("+0.00;-0.00;0.00")
+                                        </MudText>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+<style>
+    .dash-legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    .dash-legend-opened { background: #1976d2; }
+    .dash-legend-closed { background: #43a047; }
+</style>
+
+@code {
+    private bool _loading = true;
+    private DashboardKpisDto _kpis = new(0, 0, 0, 0, 0, 0m, null);
+    private IReadOnlyList<BranchBreakdownRow> _branches = Array.Empty<BranchBreakdownRow>();
+    private IReadOnlyList<AgingBucketRow> _aging = Array.Empty<AgingBucketRow>();
+    private IReadOnlyList<PartsVarianceRow> _variance = Array.Empty<PartsVarianceRow>();
+    private IReadOnlyList<ThroughputWeekRow> _throughput = Array.Empty<ThroughputWeekRow>();
+    private RevenuePeriodDto _revenue = new(0m, 0m, 0, 0, 30);
+    private IReadOnlyList<TodayRepairRow> _today = Array.Empty<TodayRepairRow>();
+
+    private List<ChartSeries<double>> _throughputSeries = new();
+    private string[] _throughputLabels = Array.Empty<string>();
+    private readonly string[] _throughputPalette = new[] { "#1976d2", "#43a047" };
+
+    private string RevenueDeltaLabel
+    {
+        get
+        {
+            var prev = _revenue.PreviousPeriodAmount;
+            var curr = _revenue.CurrentPeriodAmount;
+            if (prev == 0m) return curr == 0m ? "0%" : "—";
+            var pct = (double)((curr - prev) / prev) * 100.0;
+            return pct.ToString("+0.0;-0.0;0.0") + "%";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var kpisTask = Mediator.Send(new GetDashboardKpisQuery());
+        var branchesTask = Mediator.Send(new GetBranchBreakdownQuery());
+        var agingTask = Mediator.Send(new GetAgingBucketsQuery());
+        var varianceTask = Mediator.Send(new GetPartsVarianceQuery());
+        var throughputTask = Mediator.Send(new GetThroughputTrendQuery());
+        var revenueTask = Mediator.Send(new GetRevenuePeriodQuery());
+        var todayTask = Mediator.Send(new GetTodayRepairsQuery());
+
+        await Task.WhenAll(kpisTask, branchesTask, agingTask, varianceTask,
+                           throughputTask, revenueTask, todayTask);
+
+        _kpis = await kpisTask;
+        _branches = await branchesTask;
+        _aging = await agingTask;
+        _variance = await varianceTask;
+        _throughput = await throughputTask;
+        _revenue = await revenueTask;
+        _today = await todayTask;
+
+        _throughputLabels = _throughput.Select(r => r.WeekStart.ToString("dd/MM")).ToArray();
+        _throughputSeries = new List<ChartSeries<double>>
+        {
+            new() { Name = L["OpenedCases"], Data = _throughput.Select(r => (double)r.Opened).ToArray() },
+            new() { Name = L["ClosedCases"], Data = _throughput.Select(r => (double)r.Closed).ToArray() }
+        };
+
+        _loading = false;
+    }
+}

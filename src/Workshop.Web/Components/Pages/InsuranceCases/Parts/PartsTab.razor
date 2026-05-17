@@ -1,0 +1,247 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.InsuranceParts
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+        <MudText Typo="Typo.subtitle1">@L["Parts"] (@_lines.Count)</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="AddPart">
+            @L["NewPart"]
+        </MudButton>
+    </MudStack>
+
+    @if (_lines.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">@L["NoPartsYet"]</MudAlert>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <MudSimpleTable Dense Hover Striped Bordered Style="min-width: 1200px;">
+                <thead>
+                    <tr>
+                        <th>@L["PartName"]</th>
+                        <th>@L["PartType"]</th>
+                        <th style="text-align:right;">@L["Quantity"]</th>
+                        <th style="text-align:right;">@L["UnitCost"]</th>
+                        <th style="text-align:right;">@L["Total"]</th>
+                        <th>@L["Supplier"]</th>
+                        <th>@L["DestinationBranch"]</th>
+                        <th>@L["Availability"]</th>
+                        <th>@L["InsuranceApproved"]</th>
+                        <th>@L["ReceivedStatus"]</th>
+                        <th>@L["Warehouse"]</th>
+                        <th style="width: 80px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _lines)
+                    {
+                        <tr>
+                            <td>
+                                @p.PartName
+                                @if (!string.IsNullOrWhiteSpace(p.Notes))
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@p.Notes</MudText>
+                                }
+                            </td>
+                            <td>@PartTypeLabel(p.PartType)</td>
+                            <td style="text-align:right;">@p.Quantity.ToString("0.##")</td>
+                            <td style="text-align:right;">@p.UnitCost.ToString("0.00")</td>
+                            <td style="text-align:right;"><strong>@p.Total.ToString("0.00")</strong></td>
+                            <td>@(p.SupplierName ?? "—")</td>
+                            <td>@p.DestinationBranchName</td>
+                            <td>@AvailabilityLabel(p.AvailabilityStatus)</td>
+                            <td>
+                                @if (p.InsuranceApproved)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Default" Size="Size.Small" />
+                                }
+                            </td>
+                            <td>
+                                <MudChip T="string" Size="Size.Small" Color="@StatusColor(p.ReceivedStatus)"
+                                         Text="@StatusLabel(p.ReceivedStatus)" />
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(p.WarehouseName))
+                                {
+                                    <MudText Typo="Typo.body2">@p.WarehouseName</MudText>
+                                    @if (!string.IsNullOrWhiteSpace(p.StorageLocation))
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@p.StorageLocation</MudText>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense Size="Size.Small">
+                                    <MudMenuItem OnClick="@(() => EditPart(p))" Icon="@Icons.Material.Filled.Edit">
+                                        @L["Edit"]
+                                    </MudMenuItem>
+                                    @foreach (var next in UpdatePartReceivedStatusHandler.AllowedNext(p.ReceivedStatus))
+                                    {
+                                        <MudMenuItem OnClick="@(() => TransitionStatus(p, next))"
+                                                     Icon="@StatusIcon(next)">
+                                            @L[$"MarkAs_{next}"]
+                                        </MudMenuItem>
+                                    }
+                                    <MudMenuItem OnClick="@(() => DeletePart(p))" Icon="@Icons.Material.Filled.Delete">
+                                        @L["Delete"]
+                                    </MudMenuItem>
+                                </MudMenu>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="text-align: right;"><strong>@L["PartsSubtotal"]</strong></td>
+                        <td style="text-align: right;"><strong>@PartsSubtotal.ToString("0.00")</strong></td>
+                        <td colspan="7"></td>
+                    </tr>
+                </tfoot>
+            </MudSimpleTable>
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private IReadOnlyList<InsurancePartLineDto> _lines = Array.Empty<InsurancePartLineDto>();
+
+    private decimal PartsSubtotal => _lines.Sum(p => p.Total);
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _lines = await Mediator.Send(new GetPartLinesForCaseQuery(InsuranceCaseId));
+        _loading = false;
+    }
+
+    private async Task AddPart()
+    {
+        var parameters = new DialogParameters { ["InsuranceCaseId"] = InsuranceCaseId };
+        var dlg = await Dialogs.ShowAsync<PartLineEditDialog>(L["NewPart"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false }) await Refresh();
+    }
+
+    private async Task EditPart(InsurancePartLineDto line)
+    {
+        var parameters = new DialogParameters
+        {
+            ["InsuranceCaseId"] = InsuranceCaseId,
+            ["Existing"] = line
+        };
+        var dlg = await Dialogs.ShowAsync<PartLineEditDialog>(L["EditPart"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false }) await Refresh();
+    }
+
+    private async Task DeletePart(InsurancePartLineDto line)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"],
+            Message = L["ConfirmDeletePart"],
+            YesText = L["Delete"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+        try
+        {
+            await Mediator.Send(new DeleteInsurancePartLineCommand(line.Id));
+            Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task TransitionStatus(InsurancePartLineDto line, PartReceivedStatus target)
+    {
+        try
+        {
+            if (target == PartReceivedStatus.Received)
+            {
+                var parameters = new DialogParameters { ["PartLine"] = line };
+                var dlg = await Dialogs.ShowAsync<ReceivePartDialog>(L["MarkAs_Received"], parameters,
+                    new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+                var result = await dlg.Result;
+                if (result is { Canceled: false }) await Refresh();
+            }
+            else
+            {
+                await Mediator.Send(new UpdatePartReceivedStatusCommand(line.Id, target));
+                Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+                await Refresh();
+            }
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task Refresh()
+    {
+        await Reload();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private string PartTypeLabel(PartType t) => t switch
+    {
+        PartType.Original => L["PT_Original"],
+        PartType.NonOEM => L["PT_NonOEM"],
+        PartType.MTX => L["PT_MTX"],
+        _ => L["PT_Other"]
+    };
+
+    private string AvailabilityLabel(AvailabilityStatus s) => s switch
+    {
+        AvailabilityStatus.Available => L["AV_Available"],
+        AvailabilityStatus.OutOfStock => L["AV_OutOfStock"],
+        AvailabilityStatus.Discontinued => L["AV_Discontinued"],
+        _ => L["AV_Unknown"]
+    };
+
+    private string StatusLabel(PartReceivedStatus s) => L[$"PRS_{s}"];
+
+    private static Color StatusColor(PartReceivedStatus s) => s switch
+    {
+        PartReceivedStatus.Pending => Color.Default,
+        PartReceivedStatus.Ordered => Color.Info,
+        PartReceivedStatus.InTransit => Color.Warning,
+        PartReceivedStatus.Received => Color.Success,
+        PartReceivedStatus.Defective => Color.Error,
+        PartReceivedStatus.Cancelled => Color.Dark,
+        _ => Color.Default
+    };
+
+    private static string StatusIcon(PartReceivedStatus s) => s switch
+    {
+        PartReceivedStatus.Ordered => Icons.Material.Filled.ShoppingCart,
+        PartReceivedStatus.InTransit => Icons.Material.Filled.LocalShipping,
+        PartReceivedStatus.Received => Icons.Material.Filled.Inventory,
+        PartReceivedStatus.Defective => Icons.Material.Filled.ReportProblem,
+        PartReceivedStatus.Cancelled => Icons.Material.Filled.Cancel,
+        _ => Icons.Material.Filled.HourglassEmpty
+    };
+}

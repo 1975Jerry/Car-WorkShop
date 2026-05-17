@@ -1,0 +1,242 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.Photos
+@using Workshop.Application.Features.Repairs
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudPaper Class="pa-3 mb-3" Outlined Elevation="0">
+        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+            <MudText Typo="Typo.subtitle1">@L["RepairSchedule"]</MudText>
+            @if (_repair is not null)
+            {
+                <MudChip T="string" Size="Size.Small" Color="@StatusColor(_repair.Status)" Text="@StatusLabel(_repair.Status)" />
+            }
+        </MudStack>
+
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudDatePicker @bind-Date="_scheduledDate" Label="@L["ScheduledDate"]" Required
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTimePicker @bind-Time="_scheduledTime" Label="@L["ScheduledTime"]"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSelect T="Guid?" @bind-Value="_technicianId" Label="@L["Technician"]" Clearable
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var t in _technicians)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)t.Id)">@t.Label</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_notes" Label="@L["Notes"]" Lines="2"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+
+        <MudStack Row Spacing="2" Class="mt-3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Schedule"
+                       OnClick="SaveSchedule" Disabled="@_saving">
+                @L["SaveSchedule"]
+            </MudButton>
+            @if (_repair is not null && _repair.Status == RepairStatus.Scheduled && _technicianId is not null)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                           OnClick="StartRepair" Disabled="@_saving">
+                    @L["StartRepair"]
+                </MudButton>
+            }
+            @if (_repair is not null && _repair.Status == RepairStatus.InProgress)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.CheckCircle"
+                           OnClick="CompleteRepair" Disabled="@_saving">
+                    @L["MarkCompleted"]
+                </MudButton>
+            }
+        </MudStack>
+    </MudPaper>
+
+    @if (_repair is not null)
+    {
+        <MudPaper Class="pa-3 mb-3" Outlined Elevation="0">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">@L["InspectionAndProgress"]</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSwitch T="bool" Value="_repair.IntermediateInspectionDone"
+                               ValueChanged="OnInspectionChanged"
+                               Color="Color.Primary"
+                               Label="@L["IntermediateInspectionDone"]" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <Field Label="@L["StartedAt"]" Value="@(_repair.StartDate?.ToString("yyyy-MM-dd HH:mm"))" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <Field Label="@L["CompletedAt"]" Value="@(_repair.CompletionDate?.ToString("yyyy-MM-dd HH:mm"))" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    @if (_repair?.Id is Guid rid && rid != Guid.Empty)
+    {
+        <div class="mt-3">
+            <PhotoGallery OwnerKind="PhotoOwnerKind.Repair"
+                          OwnerId="@rid"
+                          Phase="@PhotoPhase.Intermediate"
+                          Title="@L["IntermediatePhotos"]"
+                          OnChanged="OnChanged" />
+        </div>
+        <div class="mt-3">
+            <PhotoGallery OwnerKind="PhotoOwnerKind.Repair"
+                          OwnerId="@rid"
+                          Phase="@PhotoPhase.Completion"
+                          Title="@L["CompletionPhotos"]"
+                          OnChanged="OnChanged" />
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid InsuranceCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+
+    private RepairDto? _repair;
+    private IReadOnlyList<LookupItem> _technicians = Array.Empty<LookupItem>();
+
+    private DateTime? _scheduledDate;
+    private TimeSpan? _scheduledTime;
+    private Guid? _technicianId;
+    private string? _notes;
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _technicians = await Mediator.Send(new GetStaffUserLookupQuery());
+        _repair = await Mediator.Send(new GetRepairForCaseQuery(InsuranceCaseId));
+        if (_repair is not null)
+        {
+            _scheduledDate = _repair.ScheduledDate.ToDateTime(TimeOnly.MinValue);
+            _scheduledTime = _repair.ScheduledTime.HasValue
+                ? _repair.ScheduledTime.Value.ToTimeSpan()
+                : null;
+            _technicianId = _repair.TechnicianId;
+            _notes = _repair.Notes;
+        }
+        else
+        {
+            _scheduledDate = DateTime.Today.AddDays(1);
+        }
+        _loading = false;
+    }
+
+    private async Task SaveSchedule()
+    {
+        _saving = true;
+        try
+        {
+            if (_scheduledDate is null)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+            var dto = new UpsertRepairScheduleDto(
+                DateOnly.FromDateTime(_scheduledDate.Value),
+                _scheduledTime is null ? null : TimeOnly.FromTimeSpan(_scheduledTime.Value),
+                _technicianId, _notes);
+            await Mediator.Send(new UpsertRepairScheduleCommand(InsuranceCaseId, dto));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private async Task StartRepair()
+    {
+        _saving = true;
+        try
+        {
+            await Mediator.Send(new StartRepairCommand(InsuranceCaseId));
+            Snackbar.Add(L["RepairStarted"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private async Task CompleteRepair()
+    {
+        var nowText = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["MarkCompleted"],
+            Message = string.Format(L["ConfirmCompleteRepair"], nowText),
+            YesText = L["Confirm"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+
+        _saving = true;
+        try
+        {
+            await Mediator.Send(new CompleteRepairCommand(InsuranceCaseId,
+                new CompleteRepairDto(DateTime.UtcNow, null)));
+            Snackbar.Add(L["RepairCompleted"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private async Task OnInspectionChanged(bool value)
+    {
+        try
+        {
+            await Mediator.Send(new MarkIntermediateInspectionCommand(InsuranceCaseId, value));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task Refresh()
+    {
+        await Reload();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private string StatusLabel(RepairStatus s) => L[$"RS_{s}"];
+
+    private static Color StatusColor(RepairStatus s) => s switch
+    {
+        RepairStatus.Scheduled => Color.Info,
+        RepairStatus.InProgress => Color.Warning,
+        RepairStatus.OnHold => Color.Default,
+        RepairStatus.Completed => Color.Success,
+        _ => Color.Default
+    };
+}

@@ -1,0 +1,43 @@
+@inherits LayoutComponentBase
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudThemeProvider Theme="@Workshop.Web.Theme.PaintBullTheme.Light" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="2" Color="Color.Primary">
+        <MudText Typo="Typo.h6">Paint Bull · @L["InsurerPortal"]</MudText>
+        <MudSpacer />
+        <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit">
+            <MudMenuItem OnClick="@(() => SetLang("el"))">Ελληνικά</MudMenuItem>
+            <MudMenuItem OnClick="@(() => SetLang("en"))">English</MudMenuItem>
+        </MudMenu>
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit">
+                    <MudText Class="px-4 py-2" Typo="Typo.body2">@context.User.Identity?.Name</MudText>
+                    <MudDivider />
+                    <MudMenuItem Href="/Account/Logout" ForceLoad>@L["SignOut"]</MudMenuItem>
+                </MudMenu>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+    private void SetLang(string lang)
+    {
+        var uri = new Uri(NavigationManager.Uri).GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+        NavigationManager.NavigateTo($"/api/culture?culture={lang}&redirectUri={Uri.EscapeDataString(uri)}", forceLoad: true);
+    }
+}

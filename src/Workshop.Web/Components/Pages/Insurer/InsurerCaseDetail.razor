@@ -1,0 +1,258 @@
+@page "/insurer/cases/{Id:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "InsurerPortal")]
+@layout Workshop.Web.Components.Layout.InsurerLayout
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Abstractions
+@using Workshop.Application.Features.InsurerPortal
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+@inject ICurrentUserService CurrentUser
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @(_case?.CaseNumber ?? "...")</PageTitle>
+
+<MudStack Row AlignItems="AlignItems.Center" Class="mb-3">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Nav.NavigateTo("/insurer"))" />
+    <MudText Typo="Typo.h5" Class="ms-2">@(_case?.CaseNumber ?? "")</MudText>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else if (_case is null)
+{
+    <MudAlert Severity="Severity.Warning">@L["NoData"]</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["Details"]</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6"><Field Label="@L["Customer"]" Value="@_case.CustomerDisplayName" /></MudItem>
+                    <MudItem xs="12" md="6"><Field Label="@L["Phone"]" Value="@_case.CustomerPhone" /></MudItem>
+                    <MudItem xs="12" md="4"><Field Label="@L["PlateNumber"]" Value="@_case.VehiclePlate" /></MudItem>
+                    <MudItem xs="12" md="4"><Field Label="@L["Vehicle"]" Value="@($"{_case.VehicleBrand} {_case.VehicleModel}")" /></MudItem>
+                    <MudItem xs="12" md="4"><Field Label="@L["Year"]" Value="@_case.VehicleYear?.ToString()" /></MudItem>
+                    <MudItem xs="12" md="6"><Field Label="@L["ClaimNumber"]" Value="@_case.ClaimNumber" /></MudItem>
+                    <MudItem xs="12" md="6"><Field Label="@L["AccidentDate"]" Value="@_case.AccidentDate?.ToString("yyyy-MM-dd")" /></MudItem>
+                    @if (!string.IsNullOrWhiteSpace($"{_case.DriverLastName}{_case.DriverFirstName}".Trim()))
+                    {
+                        <MudItem xs="12" md="6"><Field Label="@L["Driver"]"
+                            Value="@($"{_case.DriverLastName} {_case.DriverFirstName}".Trim())" /></MudItem>
+                        <MudItem xs="12" md="6"><Field Label="@L["Phone"]" Value="@_case.DriverPhone" /></MudItem>
+                    }
+                </MudGrid>
+            </MudPaper>
+
+            @if (_case.Quote is { } quote)
+            {
+                <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                        <MudText Typo="Typo.h6">@L["QuoteSummary"] · @quote.QuoteNumber</MudText>
+                        @if (!string.IsNullOrWhiteSpace(quote.PdfPath))
+                        {
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                                       Href="@($"/{quote.PdfPath}")" Target="_blank">@L["DownloadPdf"]</MudButton>
+                        }
+                    </MudStack>
+                    <MudGrid>
+                        <MudItem xs="12" md="3"><Field Label="@L["IssueDate"]" Value="@quote.IssueDate.ToString("yyyy-MM-dd")" /></MudItem>
+                        <MudItem xs="6" md="3"><Field Label="@L["LaborSubtotal"]" Value="@quote.LaborSubtotal.ToString("N2")" /></MudItem>
+                        <MudItem xs="6" md="3"><Field Label="@L["PartsSubtotal"]" Value="@quote.PartsSubtotal.ToString("N2")" /></MudItem>
+                        <MudItem xs="6" md="3"><Field Label="@L["VatAmount"]" Value="@quote.VatAmount.ToString("N2")" /></MudItem>
+                        <MudItem xs="12"><Field Label="@L["Total"]" Value="@quote.Total.ToString("N2")" /></MudItem>
+                    </MudGrid>
+                </MudPaper>
+            }
+
+            @if (_case.WorkItems.Count > 0)
+            {
+                <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["WorkItems"] (@_case.WorkItems.Count)</MudText>
+                    <MudSimpleTable Dense Hover Striped Bordered>
+                        <thead>
+                            <tr>
+                                <th>@L["BodyPanel"]</th>
+                                <th>@L["Description"]</th>
+                                <th style="text-align:right;">@L["Total"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var w in _case.WorkItems)
+                            {
+                                <tr>
+                                    <td>@(w.PanelCode ?? "—")</td>
+                                    <td>@w.Description</td>
+                                    <td style="text-align:right;">@w.Total.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            }
+
+            @if (_case.Parts.Count > 0)
+            {
+                <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["Parts"] (@_case.Parts.Count)</MudText>
+                    <MudSimpleTable Dense Hover Striped Bordered>
+                        <thead>
+                            <tr>
+                                <th>@L["PartName"]</th>
+                                <th>@L["PartType"]</th>
+                                <th style="text-align:right;">@L["Quantity"]</th>
+                                <th style="text-align:right;">@L["UnitCost"]</th>
+                                <th style="text-align:right;">@L["Total"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in _case.Parts)
+                            {
+                                <tr>
+                                    <td>@p.PartName</td>
+                                    <td>@L[$"PT_{p.PartType}"]</td>
+                                    <td style="text-align:right;">@p.Quantity.ToString("0.##")</td>
+                                    <td style="text-align:right;">@p.UnitCost.ToString("N2")</td>
+                                    <td style="text-align:right;">@p.Total.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            }
+
+            @if (_sentDocs.Count > 0)
+            {
+                <MudPaper Class="pa-4 mb-3" Outlined Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["SentDocuments"] (@_sentDocs.Count)</MudText>
+                    <MudList T="InsurerSentDocumentDto" Dense>
+                        @foreach (var d in _sentDocs)
+                        {
+                            <MudListItem T="InsurerSentDocumentDto" Value="d">
+                                <MudIcon Icon="@Icons.Material.Filled.Description" Class="me-2" />
+                                <a href="/@d.FilePath" target="_blank" rel="noopener">@d.FileName</a>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ms-2">
+                                    @L[$"DT_{d.DocumentType}"] · @d.SentAt.ToString("yyyy-MM-dd")
+                                </MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4" Outlined Elevation="0">
+                <MudText Typo="Typo.h6" Class="mb-3">@L["ApprovalDecision"]</MudText>
+
+                @if (_case.Approval is { } ap)
+                {
+                    <MudChip T="string" Color="@DecisionColor(ap.ApprovalStatus)" Class="mb-2">
+                        @L[$"AS_{ap.ApprovalStatus}"]
+                    </MudChip>
+                    @if (ap.ApprovalStatus == ApprovalStatus.Approved)
+                    {
+                        <Field Label="@L["ApprovedAmount"]" Value="@ap.ApprovedAmount.ToString("N2")" />
+                    }
+                    @if (!string.IsNullOrWhiteSpace(ap.Notes))
+                    {
+                        <Field Label="@L["Notes"]" Value="@ap.Notes" />
+                    }
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @L["ApprovalDate"]: @ap.ApprovalDate.ToString("yyyy-MM-dd")
+                    </MudText>
+                    <MudDivider Class="my-3" />
+                }
+
+                <MudButton FullWidth Variant="Variant.Filled" Color="Color.Success" Class="mb-2"
+                           StartIcon="@Icons.Material.Filled.CheckCircle" OnClick="OpenApprove">
+                    @L["Approve"]
+                </MudButton>
+                <MudButton FullWidth Variant="Variant.Filled" Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Cancel" OnClick="OpenReject">
+                    @L["Reject"]
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private InsurerCaseDetailDto? _case;
+    private IReadOnlyList<InsurerSentDocumentDto> _sentDocs = Array.Empty<InsurerSentDocumentDto>();
+
+    protected override async Task OnParametersSetAsync() => await Refresh();
+
+    private async Task Refresh()
+    {
+        _loading = true;
+        var company = CurrentUser.InsuranceCompanyId;
+        if (company is null) { _case = null; _loading = false; return; }
+        _case = await Mediator.Send(new GetInsurerCaseDetailQuery(company.Value, Id));
+        if (_case is not null)
+            _sentDocs = await Mediator.Send(new GetInsurerSentDocumentsQuery(company.Value, Id));
+        _loading = false;
+    }
+
+    private async Task OpenApprove()
+    {
+        var company = CurrentUser.InsuranceCompanyId!.Value;
+        var defaultAmount = _case?.Approval?.ApprovedAmount ?? _case?.Quote?.Total ?? 0m;
+        var parameters = new DialogParameters
+        {
+            ["Decision"] = ApprovalStatus.Approved,
+            ["InitialAmount"] = defaultAmount
+        };
+        var dlg = await Dialogs.ShowAsync<InsurerDecisionDialog>(L["Approve"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false, Data: InsurerDecisionDto data })
+            await Submit(company, ApprovalStatus.Approved, data);
+    }
+
+    private async Task OpenReject()
+    {
+        var company = CurrentUser.InsuranceCompanyId!.Value;
+        var parameters = new DialogParameters
+        {
+            ["Decision"] = ApprovalStatus.Rejected,
+            ["InitialAmount"] = 0m
+        };
+        var dlg = await Dialogs.ShowAsync<InsurerDecisionDialog>(L["Reject"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false, Data: InsurerDecisionDto data })
+            await Submit(company, ApprovalStatus.Rejected, data);
+    }
+
+    private async Task Submit(Guid company, ApprovalStatus decision, InsurerDecisionDto data)
+    {
+        try
+        {
+            await Mediator.Send(new InsurerDecideCommand(company, Id, decision, data));
+            Snackbar.Add(L["DecisionRecorded"], Severity.Success);
+            await Refresh();
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private static Color DecisionColor(ApprovalStatus s) => s switch
+    {
+        ApprovalStatus.Approved => Color.Success,
+        ApprovalStatus.Rejected => Color.Error,
+        _ => Color.Default
+    };
+}

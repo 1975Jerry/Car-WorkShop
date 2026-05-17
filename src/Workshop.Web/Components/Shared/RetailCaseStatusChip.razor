@@ -1,0 +1,30 @@
+@using MudBlazor
+@using Workshop.Domain.Enums
+
+<MudChip T="string" Size="Size.Small" Color="@Color" Variant="Variant.Filled">@Label</MudChip>
+
+@code {
+    [Parameter, EditorRequired] public RetailCaseStatus Status { get; set; }
+
+    private Color Color => Status switch
+    {
+        RetailCaseStatus.Quoted => MudBlazor.Color.Default,
+        RetailCaseStatus.Accepted => MudBlazor.Color.Info,
+        RetailCaseStatus.InProgress => MudBlazor.Color.Primary,
+        RetailCaseStatus.Completed => MudBlazor.Color.Success,
+        RetailCaseStatus.Paid => MudBlazor.Color.Success,
+        RetailCaseStatus.Closed => MudBlazor.Color.Dark,
+        _ => MudBlazor.Color.Default
+    };
+
+    private string Label => Status switch
+    {
+        RetailCaseStatus.Quoted => "Προσφορά",
+        RetailCaseStatus.Accepted => "Αποδοχή",
+        RetailCaseStatus.InProgress => "Σε Εξέλιξη",
+        RetailCaseStatus.Completed => "Ολοκληρώθηκε",
+        RetailCaseStatus.Paid => "Εξοφλήθηκε",
+        RetailCaseStatus.Closed => "Έκλεισε",
+        _ => Status.ToString()
+    };
+}

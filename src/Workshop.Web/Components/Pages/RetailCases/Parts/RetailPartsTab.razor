@@ -1,0 +1,209 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.InsuranceParts
+@using Workshop.Application.Features.RetailParts
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+        <MudText Typo="Typo.subtitle1">@L["Parts"] (@_lines.Count)</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="AddPart">@L["AddPartLine"]</MudButton>
+    </MudStack>
+
+    @if (_lines.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">@L["NoPartsYet"]</MudAlert>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <MudSimpleTable Dense Hover Striped Bordered Style="min-width: 1000px;">
+                <thead>
+                    <tr>
+                        <th>@L["PartName"]</th>
+                        <th>@L["PartType"]</th>
+                        <th style="text-align:right;">@L["Quantity"]</th>
+                        <th style="text-align:right;">@L["UnitCost"]</th>
+                        <th style="text-align:right;">@L["Total"]</th>
+                        <th>@L["Supplier"]</th>
+                        <th>@L["DestinationBranch"]</th>
+                        <th>@L["ReceivedStatus"]</th>
+                        <th>@L["Warehouse"]</th>
+                        <th style="width: 60px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _lines)
+                    {
+                        <tr>
+                            <td>@p.PartName</td>
+                            <td>@PartTypeLabel(p.PartType)</td>
+                            <td style="text-align:right;">@p.Quantity.ToString("0.##")</td>
+                            <td style="text-align:right;">@p.UnitCost.ToString("0.00")</td>
+                            <td style="text-align:right;"><strong>@p.Total.ToString("0.00")</strong></td>
+                            <td>@(p.SupplierName ?? "—")</td>
+                            <td>@p.DestinationBranchName</td>
+                            <td>
+                                <MudChip T="string" Size="Size.Small" Color="@StatusColor(p.ReceivedStatus)"
+                                         Text="@L[$"PRS_{p.ReceivedStatus}"]" />
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(p.WarehouseName))
+                                {
+                                    <MudText Typo="Typo.body2">@p.WarehouseName</MudText>
+                                    @if (!string.IsNullOrWhiteSpace(p.StorageLocation))
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@p.StorageLocation</MudText>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense Size="Size.Small">
+                                    <MudMenuItem OnClick="@(() => EditPart(p))" Icon="@Icons.Material.Filled.Edit">
+                                        @L["Edit"]
+                                    </MudMenuItem>
+                                    @foreach (var next in UpdatePartReceivedStatusHandler.AllowedNext(p.ReceivedStatus))
+                                    {
+                                        <MudMenuItem OnClick="@(() => TransitionStatus(p, next))">
+                                            @L[$"MarkAs_{next}"]
+                                        </MudMenuItem>
+                                    }
+                                    <MudMenuItem OnClick="@(() => DeletePart(p))" Icon="@Icons.Material.Filled.Delete">
+                                        @L["Delete"]
+                                    </MudMenuItem>
+                                </MudMenu>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="text-align: right;"><strong>@L["PartsSubtotal"]</strong></td>
+                        <td style="text-align: right;"><strong>@_lines.Sum(p => p.Total).ToString("0.00")</strong></td>
+                        <td colspan="5"></td>
+                    </tr>
+                </tfoot>
+            </MudSimpleTable>
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid RetailCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private IReadOnlyList<RetailPartLineDto> _lines = Array.Empty<RetailPartLineDto>();
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _lines = await Mediator.Send(new GetPartLinesForRetailCaseQuery(RetailCaseId));
+        _loading = false;
+    }
+
+    private async Task AddPart()
+    {
+        var parameters = new DialogParameters { ["RetailCaseId"] = RetailCaseId };
+        var dlg = await Dialogs.ShowAsync<RetailPartLineEditDialog>(L["AddPartLine"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false }) await Refresh();
+    }
+
+    private async Task EditPart(RetailPartLineDto line)
+    {
+        var parameters = new DialogParameters
+        {
+            ["RetailCaseId"] = RetailCaseId,
+            ["Existing"] = line
+        };
+        var dlg = await Dialogs.ShowAsync<RetailPartLineEditDialog>(L["Edit"], parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dlg.Result;
+        if (result is { Canceled: false }) await Refresh();
+    }
+
+    private async Task DeletePart(RetailPartLineDto line)
+    {
+        var ok = await Dialogs.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = L["ConfirmDelete"],
+            Message = L["ConfirmDeletePart"],
+            YesText = L["Delete"],
+            CancelText = L["Cancel"]
+        });
+        if (ok != true) return;
+        try
+        {
+            await Mediator.Send(new DeleteRetailPartLineCommand(line.Id));
+            Snackbar.Add(L["DeletedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task TransitionStatus(RetailPartLineDto line, PartReceivedStatus target)
+    {
+        try
+        {
+            Guid? warehouseId = null;
+            string? storage = null;
+            if (target == PartReceivedStatus.Received)
+            {
+                var parameters = new DialogParameters { ["PartName"] = line.PartName };
+                var dlg = await Dialogs.ShowAsync<ReceiveRetailPartDialog>(L["MarkAs_Received"], parameters,
+                    new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+                var result = await dlg.Result;
+                if (result is { Canceled: false, Data: ReceivePartResult r })
+                {
+                    warehouseId = r.WarehouseId;
+                    storage = r.StorageLocation;
+                }
+                else return;
+            }
+            await Mediator.Send(new UpdateRetailPartReceivedStatusCommand(line.Id, target, warehouseId, storage));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task Refresh()
+    {
+        await Reload();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private string PartTypeLabel(PartType t) => t switch
+    {
+        PartType.Original => L["PT_Original"],
+        PartType.NonOEM => L["PT_NonOEM"],
+        PartType.MTX => L["PT_MTX"],
+        _ => L["PT_Other"]
+    };
+
+    private static Color StatusColor(PartReceivedStatus s) => s switch
+    {
+        PartReceivedStatus.Pending => Color.Default,
+        PartReceivedStatus.Ordered => Color.Info,
+        PartReceivedStatus.InTransit => Color.Warning,
+        PartReceivedStatus.Received => Color.Success,
+        PartReceivedStatus.Defective => Color.Error,
+        PartReceivedStatus.Cancelled => Color.Dark,
+        _ => Color.Default
+    };
+}

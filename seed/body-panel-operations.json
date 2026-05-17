@@ -1,0 +1,1210 @@
+[
+  {
+    "PanelCode": "1",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "1",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "1",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "1",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "1",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "2",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "2",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "2",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "2",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "2",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "3",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "3",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "3",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "3",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "3",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "4",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "4",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "4",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "4",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "4",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "5",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "5",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "5",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "6",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "6",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "6",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "7",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "7",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "7",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "7",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "8",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "8",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "8",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "8",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "8",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "9",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "9",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "10",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "10",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "10",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "10",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "10",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "11",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "11",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "11",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "11",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "11",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "12",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "12",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "12",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "12",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "12",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "13",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "13",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "13",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "13",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "13",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "14",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "14",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "14",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "14",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "14",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "15",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "15",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "15",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "15",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "15",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "16",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "16",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "16",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "16",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "16",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "17",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "17",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "17",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "17",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "17",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "18",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "18",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "18",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "18",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "18",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "19",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "19",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "19",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "20",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "20",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "20",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "21",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "21",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "21",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "21",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "21Α",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "21Α",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "21Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "21Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "21Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "22",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "22",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "22",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "23",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "23",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "23",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "24",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "24",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "24",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "24",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "24",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "25",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "25",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "25",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "25",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "25",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "26",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "26",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "26",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "26",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "26",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "27",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "27",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "27",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "27",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "27",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "28",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "28",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "28",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "28",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "28",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "29",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "29",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "29",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "30",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "30",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "30",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "31",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "31",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "31",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "31Α",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "31Α",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "31Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "31Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "31Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "32",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "32",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "32",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "33",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "33",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "33",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "33",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "33",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "34",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "34",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "34",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "34Α",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "34Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "34Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "34Α",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "34Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "34Δ",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "34Δ",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "34Δ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "34Δ",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "34Δ",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "35Α",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "35Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "35Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "35Α",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "35Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "35Δ",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "35Δ",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "35Δ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "35Δ",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "35Δ",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "36Α",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "36Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "36Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "36Α",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "36Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "36Δ",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "36Δ",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "36Δ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "36Δ",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "36Δ",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "37Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "37Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "37Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "37Δ",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "37Δ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "37Δ",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "38Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "38Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "38Α",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "38Δ",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "38Δ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "38Δ",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "39",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "39",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "40",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "40",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "41",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "41",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "42",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "42",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "43",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "43",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "44",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "44",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "45",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "45",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "46",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "46",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "47",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "47",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "47",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "47",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "48",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "48",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "48",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "48",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "49",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "49",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "49",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "49",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "50",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "50",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "50",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "50",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "51",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "51",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "51",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "51",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "52",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "52",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "52",
+    "Operation": "PDR"
+  },
+  {
+    "PanelCode": "52",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "53",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "53",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "53",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "53",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "53",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "54",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "54",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "54",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "54",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "54",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "55",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "55",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "55",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "55",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "55",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "56",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "56",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "56",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "56",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "56",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "57",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "57",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "57",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "57",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "57",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "58",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "58",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "58",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "58",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "58",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "59",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "59",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "59",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "59",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "59",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "60",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "60",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "60",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "60",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "60",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "61",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "61",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "61",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "61",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "61",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "62",
+    "Operation": "Polish"
+  },
+  {
+    "PanelCode": "62",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "62",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "62",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "62",
+    "Operation": "Weld"
+  },
+  {
+    "PanelCode": "63",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "63",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "64",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "64",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "65",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "65",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "66",
+    "Operation": "RepairPaint"
+  },
+  {
+    "PanelCode": "66",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "67Α",
+    "Operation": "RemoveRefit"
+  },
+  {
+    "PanelCode": "67Α",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "67Α",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "67Β",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "67Β",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "67Γ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "67Γ",
+    "Operation": "Repair"
+  },
+  {
+    "PanelCode": "67Δ",
+    "Operation": "Replace"
+  },
+  {
+    "PanelCode": "67Δ",
+    "Operation": "Repair"
+  }
+]

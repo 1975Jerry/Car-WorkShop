@@ -1,0 +1,23 @@
+@using MudBlazor
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_note" Label="@Prompt" Lines="2" MaxLength="500"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Ok">@L["Save"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public string Prompt { get; set; } = string.Empty;
+
+    private string? _note;
+
+    private void Ok() => Dialog.Close(DialogResult.Ok(_note));
+    private void Cancel() => Dialog.Cancel();
+}

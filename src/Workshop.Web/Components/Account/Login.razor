@@ -1,0 +1,127 @@
+@page "/Account/Login"
+@attribute [Microsoft.AspNetCore.Components.ExcludeFromInteractiveRouting]
+@layout EmptyLayout
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Identity
+@using MudBlazor
+@using Workshop.Domain.Entities.Identity
+@using Workshop.Domain.Enums
+
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+@inject ILogger<Login> Log
+
+<PageTitle>Paint Bull — @L["SignIn"]</PageTitle>
+
+<style>
+    .mb-3 { margin-bottom: 1rem; }
+    .form-label { display: block; margin-bottom: .4rem; font-size: .9rem; color: rgba(0,0,0,.7); }
+    .form-control { width: 100%; padding: .6rem .75rem; border: 1px solid #ccc; border-radius: 4px;
+                    font-size: 1rem; box-sizing: border-box; }
+    .form-control:focus { outline: none; border-color: #1F3A5F; box-shadow: 0 0 0 2px rgba(31,58,95,.15); }
+    .form-check { display: flex; align-items: center; gap: .5rem; }
+    .form-check-input { width: 18px; height: 18px; }
+    .form-check-label { font-size: .95rem; color: rgba(0,0,0,.78); }
+    .btn { display: inline-block; padding: .6rem 1rem; font-size: 1rem; font-weight: 500;
+           border: none; border-radius: 4px; cursor: pointer; }
+    .btn-primary { background: #1F3A5F; color: #fff; }
+    .btn-primary:hover { background: #2a4d7c; }
+    .w-100 { width: 100%; }
+    .text-danger { color: #b3261e; font-size: .85rem; margin-top: .25rem; }
+</style>
+
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#F7F8FA;">
+    <MudPaper Elevation="3" Class="pa-8" Style="width:420px;">
+        <div class="d-flex justify-center mb-4">
+            <MudText Typo="Typo.h4" Style="color:#1F3A5F; font-weight:600;">Paint Bull</MudText>
+        </div>
+        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-4" Style="color:rgba(0,0,0,0.66);">
+            @L["SignIn"]
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">@_errorMessage</MudAlert>
+        }
+
+        @* SSR-rendered form: must use built-in <InputText>/<InputCheckbox> so the rendered *@
+        @* HTML inputs carry name= attributes. MudBlazor 9's MudTextField doesn't emit names. *@
+        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label" for="email">@L["Email"]</label>
+                <InputText id="email" @bind-Value="Input!.Email" type="email" required
+                           autocomplete="username" class="form-control" />
+                <ValidationMessage For="@(() => Input!.Email)" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="password">@L["Password"]</label>
+                <InputText id="password" @bind-Value="Input!.Password" type="password" required
+                           autocomplete="current-password" class="form-control" />
+                <ValidationMessage For="@(() => Input!.Password)" class="text-danger" />
+            </div>
+            <div class="mb-3 form-check">
+                <InputCheckbox id="rememberMe" @bind-Value="Input!.RememberMe" class="form-check-input" />
+                <label class="form-check-label" for="rememberMe">@L["RememberMe"]</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">@L["SignIn"]</button>
+        </EditForm>
+    </MudPaper>
+</div>
+
+@code {
+    [SupplyParameterFromForm] private InputModel? Input { get; set; }
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private string? _errorMessage;
+
+    private async Task LoginUser()
+    {
+        if (Input is null) return;
+
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+        if (user is null || !user.IsActive)
+        {
+            _errorMessage = L["InvalidCredentials"];
+            return;
+        }
+
+        var result = await SignInManager.PasswordSignInAsync(
+            user, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+
+        if (result.Succeeded)
+        {
+            Log.LogInformation("User {email} signed in.", Input.Email);
+            var fallback = user.PortalAudience switch
+            {
+                PortalAudience.Customer => "/portal",
+                PortalAudience.Insurance => "/insurer",
+                PortalAudience.Supplier => "/supplier",
+                _ => "/"
+            };
+            Nav.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? fallback : ReturnUrl);
+            return;
+        }
+        if (result.IsLockedOut)
+        {
+            _errorMessage = L["AccountLocked"];
+            return;
+        }
+        _errorMessage = L["InvalidCredentials"];
+    }
+
+    private sealed class InputModel
+    {
+        [Required, EmailAddress] public string Email { get; set; } = "";
+        [Required, DataType(DataType.Password)] public string Password { get; set; } = "";
+        public bool RememberMe { get; set; }
+    }
+}

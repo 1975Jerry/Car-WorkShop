@@ -1,0 +1,152 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.RetailRepairs
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudDatePicker @bind-Date="_scheduledDate" Label="@L["ScheduledDate"]" Required
+                           Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTimePicker @bind-Time="_scheduledTime" Label="@L["ScheduledTime"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="Guid?" @bind-Value="_technicianId" Label="@L["Technician"]" Clearable
+                       Variant="Variant.Outlined" Margin="Margin.Dense">
+                @foreach (var u in _technicians)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)u.Id)">@u.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row Class="mt-4" Justify="Justify.FlexEnd" AlignItems="AlignItems.Center" Spacing="2">
+        <MudChip T="string" Size="Size.Small" Color="@StatusColor(_repair?.Status)">
+            @(_repair is null ? L["NotScheduled"] : L[$"RS_{_repair.Status}"])
+        </MudChip>
+        <MudSpacer />
+        <MudButton OnClick="Save" Variant="Variant.Outlined" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save" Disabled="@(_scheduledDate is null)">@L["Save"]</MudButton>
+        @if (_repair is not null && _repair.Status == RepairStatus.Scheduled)
+        {
+            <MudButton OnClick="StartRepair" Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PlayArrow">@L["StartRepair"]</MudButton>
+        }
+        @if (_repair is not null && _repair.Status == RepairStatus.InProgress)
+        {
+            <MudButton OnClick="CompleteRepair" Variant="Variant.Filled" Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.Check">@L["MarkCompleted"]</MudButton>
+        }
+    </MudStack>
+
+    @if (_repair is not null && (_repair.StartDate.HasValue || _repair.CompletionDate.HasValue))
+    {
+        <MudPaper Class="pa-3 mt-4" Outlined Elevation="0">
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Started"]</MudText>
+                    <MudText>@(_repair.StartDate?.ToString("yyyy-MM-dd HH:mm") ?? "—")</MudText>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["CompletedAt"]</MudText>
+                    <MudText>@(_repair.CompletionDate?.ToString("yyyy-MM-dd HH:mm") ?? "—")</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid RetailCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private RetailRepairDto? _repair;
+    private DateTime? _scheduledDate;
+    private TimeSpan? _scheduledTime;
+    private Guid? _technicianId;
+    private IReadOnlyList<LookupItem> _technicians = Array.Empty<LookupItem>();
+
+    protected override async Task OnParametersSetAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _loading = true;
+        _repair = await Mediator.Send(new GetRetailRepairForCaseQuery(RetailCaseId));
+        _technicians = await Mediator.Send(new GetStaffUserLookupQuery());
+
+        if (_repair is not null)
+        {
+            _scheduledDate = _repair.ScheduledDate.ToDateTime(TimeOnly.MinValue);
+            _scheduledTime = _repair.ScheduledTime?.ToTimeSpan();
+            _technicianId = _repair.TechnicianId;
+        }
+        _loading = false;
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            await Mediator.Send(new UpsertRetailRepairScheduleCommand(RetailCaseId,
+                new UpsertRetailRepairScheduleDto(
+                    DateOnly.FromDateTime(_scheduledDate!.Value),
+                    _scheduledTime is null ? null : TimeOnly.FromTimeSpan(_scheduledTime.Value),
+                    _technicianId)));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task StartRepair()
+    {
+        try
+        {
+            await Mediator.Send(new StartRetailRepairCommand(RetailCaseId));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task CompleteRepair()
+    {
+        try
+        {
+            await Mediator.Send(new CompleteRetailRepairCommand(RetailCaseId,
+                new CompleteRetailRepairDto(DateTime.UtcNow)));
+            Snackbar.Add(L["RepairCompleted"], Severity.Success);
+            await Refresh();
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+
+    private async Task Refresh()
+    {
+        await Reload();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private static Color StatusColor(RepairStatus? s) => s switch
+    {
+        RepairStatus.Scheduled => Color.Info,
+        RepairStatus.InProgress => Color.Primary,
+        RepairStatus.OnHold => Color.Warning,
+        RepairStatus.Completed => Color.Success,
+        _ => Color.Default
+    };
+}

@@ -1,0 +1,73 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.InsuranceParts
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-2">
+            <strong>@PartLine.PartName</strong>
+            (@PartLine.Quantity × @PartLine.UnitCost.ToString("0.00"))
+        </MudText>
+        <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["Warehouse"]" Required
+                   Variant="Variant.Outlined" Margin="Margin.Dense">
+            @foreach (var w in _warehouses)
+            {
+                <MudSelectItem T="Guid?" Value="@((Guid?)w.Id)">@w.Label</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField @bind-Value="_storageLocation" Label="@L["StorageLocation"]"
+                      Placeholder="@L["StorageLocationHint"]"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success"
+                   StartIcon="@Icons.Material.Filled.Inventory" OnClick="Confirm" Disabled="@_saving">
+            @L["MarkReceived"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public InsurancePartLineDto PartLine { get; set; } = null!;
+
+    private IReadOnlyList<LookupItem> _warehouses = Array.Empty<LookupItem>();
+    private Guid? _warehouseId;
+    private string? _storageLocation;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _warehouses = await Mediator.Send(new GetWarehouseLookupQuery(PartLine.DestinationBranchId));
+        if (_warehouses.Count == 0) _warehouses = await Mediator.Send(new GetWarehouseLookupQuery());
+        if (_warehouses.Count > 0) _warehouseId = _warehouses[0].Id;
+        _storageLocation = PartLine.StorageLocation;
+    }
+
+    private async Task Confirm()
+    {
+        if (_warehouseId is null)
+        {
+            Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+            return;
+        }
+        _saving = true;
+        try
+        {
+            await Mediator.Send(new UpdatePartReceivedStatusCommand(
+                PartLine.Id, PartReceivedStatus.Received, _warehouseId, _storageLocation));
+            Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

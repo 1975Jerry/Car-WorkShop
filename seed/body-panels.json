@@ -1,0 +1,704 @@
+[
+  {
+    "Code": "1",
+    "DescriptionGr": "ΣΠΟΙΛΕΡ ΠΡΟΦΥΛΑΚΤΗΡΑ ΕΜΠΡΟΣ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 3.0
+  },
+  {
+    "Code": "2",
+    "DescriptionGr": "ΠΡΟΦΥΛΑΚΤΗΡΑΣ ΕΜΠΡΟΣ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 8.0
+  },
+  {
+    "Code": "3",
+    "DescriptionGr": "ΜΑΣΚΑ ΠΡΟΦΥΛΑΚΤΗΡΑ ΕΜΠΡΟΣ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 13.0
+  },
+  {
+    "Code": "4",
+    "DescriptionGr": "ΚΑΠΩ ΕΜΠΡΟΣ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 22.0
+  },
+  {
+    "Code": "5",
+    "DescriptionGr": "ΠΑΡΜΠΡΙΖ ΕΜΠΡΟΣ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 36.0
+  },
+  {
+    "Code": "6",
+    "DescriptionGr": "ΗΛΙΟΡΟΦΗ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 45.0
+  },
+  {
+    "Code": "7",
+    "DescriptionGr": "ΟΥΡΑΝΟΣ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 52.0
+  },
+  {
+    "Code": "8",
+    "DescriptionGr": "ΑΕΡΟΤΟΜΗ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 75.0
+  },
+  {
+    "Code": "9",
+    "DescriptionGr": "ΠΑΡΜΠΡΙΖ ΠΙΣΩ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 68.0
+  },
+  {
+    "Code": "10",
+    "DescriptionGr": "ΠΟΡΤΜΠΑΓΚΑΖ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 80.0
+  },
+  {
+    "Code": "11",
+    "DescriptionGr": "ΠΡΟΦΥΛΑΚΤΗΡΑΣ ΠΙΣΩ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 92.0
+  },
+  {
+    "Code": "12",
+    "DescriptionGr": "ΣΠΟΙΛΕΡ ΠΡΟΦΥΛΑΚΤΗΡΑ ΠΙΣΩ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Center",
+    "DiagramX": 50.0,
+    "DiagramY": 97.0
+  },
+  {
+    "Code": "13",
+    "DescriptionGr": "ΤΡΙΜ ΦΤΕΡΟΥ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 18.0,
+    "DiagramY": 20.0
+  },
+  {
+    "Code": "14",
+    "DescriptionGr": "ΦΤΕΡΟ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 15.0,
+    "DiagramY": 26.0
+  },
+  {
+    "Code": "15",
+    "DescriptionGr": "ΠΟΡΤΑ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 15.0,
+    "DiagramY": 42.0
+  },
+  {
+    "Code": "16",
+    "DescriptionGr": "ΠΟΡΤΑ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 15.0,
+    "DiagramY": 56.0
+  },
+  {
+    "Code": "17",
+    "DescriptionGr": "ΦΤΕΡΟ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 15.0,
+    "DiagramY": 72.0
+  },
+  {
+    "Code": "18",
+    "DescriptionGr": "ΦΡΥΔΙ ΦΤΕΡΟΥ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 12.0,
+    "DiagramY": 76.0
+  },
+  {
+    "Code": "19",
+    "DescriptionGr": "ΘΟΛΟΣ ΤΡΟΧΟΥ ΕΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 8.0,
+    "DiagramY": 28.0
+  },
+  {
+    "Code": "20",
+    "DescriptionGr": "ΖΑΝΤΑ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 5.0,
+    "DiagramY": 28.0
+  },
+  {
+    "Code": "21",
+    "DescriptionGr": "ΜΑΡΣΠΙΕ ΑΡΙΣΤΕΡΑ ΜΕΤΑΛΛΙΚΟ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 10.0,
+    "DiagramY": 49.0
+  },
+  {
+    "Code": "21Α",
+    "DescriptionGr": "ΜΑΡΣΠΙΕ ΑΡΙΣΤΕΡΑ ΠΛΑΣΤΙΚΟ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 10.0,
+    "DiagramY": 52.0
+  },
+  {
+    "Code": "22",
+    "DescriptionGr": "ΖΑΝΤΑ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 5.0,
+    "DiagramY": 74.0
+  },
+  {
+    "Code": "23",
+    "DescriptionGr": "ΘΟΛΟΣ ΤΡΟΧΟΥ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 8.0,
+    "DiagramY": 74.0
+  },
+  {
+    "Code": "24",
+    "DescriptionGr": "ΦΡΥΔΙ ΦΤΕΡΟΥ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 88.0,
+    "DiagramY": 20.0
+  },
+  {
+    "Code": "25",
+    "DescriptionGr": "ΦΤΕΡΟ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 85.0,
+    "DiagramY": 26.0
+  },
+  {
+    "Code": "26",
+    "DescriptionGr": "ΠΟΡΤΑ ΕΜΠΡΟΣΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 85.0,
+    "DiagramY": 42.0
+  },
+  {
+    "Code": "27",
+    "DescriptionGr": "ΠΟΡΤΑ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 85.0,
+    "DiagramY": 56.0
+  },
+  {
+    "Code": "28",
+    "DescriptionGr": "ΦΤΕΡΟ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 85.0,
+    "DiagramY": 72.0
+  },
+  {
+    "Code": "29",
+    "DescriptionGr": "ΘΟΛΟΣ ΤΡΟΧΟΥ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 92.0,
+    "DiagramY": 28.0
+  },
+  {
+    "Code": "30",
+    "DescriptionGr": "ΖΑΝΤΑ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 95.0,
+    "DiagramY": 28.0
+  },
+  {
+    "Code": "31",
+    "DescriptionGr": "ΜΑΡΣΠΙΕ ΔΕΞΙΑ ΜΕΤΑΛΛΙΚΟ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 90.0,
+    "DiagramY": 49.0
+  },
+  {
+    "Code": "31Α",
+    "DescriptionGr": "ΜΑΡΣΠΙΕ ΔΕΞΙΑ ΠΛΑΣΤΙΚΟ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 90.0,
+    "DiagramY": 52.0
+  },
+  {
+    "Code": "32",
+    "DescriptionGr": "ΖΑΝΤΑ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 95.0,
+    "DiagramY": 74.0
+  },
+  {
+    "Code": "33",
+    "DescriptionGr": "ΦΡΥΔΙ ΦΤΕΡΟΥ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 88.0,
+    "DiagramY": 76.0
+  },
+  {
+    "Code": "34",
+    "DescriptionGr": "ΘΟΛΟΣ ΤΡΟΧΟΥ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 92.0,
+    "DiagramY": 74.0
+  },
+  {
+    "Code": "34Α",
+    "DescriptionGr": "ΦΑΝΑΡΙ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 22.0,
+    "DiagramY": 9.0
+  },
+  {
+    "Code": "34Δ",
+    "DescriptionGr": "ΦΑΝΑΡΙ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 78.0,
+    "DiagramY": 9.0
+  },
+  {
+    "Code": "35Α",
+    "DescriptionGr": "ΦΑΝΑΡΙ ΠΙΣΩ ΑΡΙΣΤΕΡΑ ΦΤΕΡΟΥ (ΕΞΩ)",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 20.0,
+    "DiagramY": 86.0
+  },
+  {
+    "Code": "35Δ",
+    "DescriptionGr": "ΦΑΝΑΡΙ ΠΙΣΩ ΔΕΞΙΑ ΦΤΕΡΟΥ (ΕΞΩ)",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 80.0,
+    "DiagramY": 86.0
+  },
+  {
+    "Code": "36Α",
+    "DescriptionGr": "ΦΑΝΑΡΙ ΠΙΣΩ ΑΡΙΣΤΕΡΑ ΠΟΡΤΜΠΑΓΚΑΖ (ΕΣΩ)",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 38.0,
+    "DiagramY": 83.0
+  },
+  {
+    "Code": "36Δ",
+    "DescriptionGr": "ΦΑΝΑΡΙ ΠΙΣΩ ΔΕΞΙΑ ΠΟΡΤΜΠΑΓΚΑΖ (ΕΣΩ)",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 62.0,
+    "DiagramY": 83.0
+  },
+  {
+    "Code": "37Α",
+    "DescriptionGr": "ΠΡΟΒΟΛΑΚΙ ΟΜΙΧΛΗΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 28.0,
+    "DiagramY": 5.0
+  },
+  {
+    "Code": "37Δ",
+    "DescriptionGr": "ΠΡΟΒΟΛΑΚΙ ΟΜΙΧΛΗΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 72.0,
+    "DiagramY": 5.0
+  },
+  {
+    "Code": "38Α",
+    "DescriptionGr": "ΑΝΑΚΛΑΣΤΙΚΟ ΠΙΣΩ ΠΡΟΦΥΛΑΚΤΗΡΑ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 28.0,
+    "DiagramY": 94.0
+  },
+  {
+    "Code": "38Δ",
+    "DescriptionGr": "ΑΝΑΚΛΑΣΤΙΚΟ ΠΙΣΩ ΠΡΟΦΥΛΑΚΤΗΡΑ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 72.0,
+    "DiagramY": 94.0
+  },
+  {
+    "Code": "39",
+    "DescriptionGr": "ΦΙΝΙΣΤΡΙΝΙ ΚΟΛΩΝΑΣ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 22.0,
+    "DiagramY": 38.0
+  },
+  {
+    "Code": "40",
+    "DescriptionGr": "ΦΙΝΙΣΤΡΙΝΙ ΚΟΛΩΝΑΣ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 78.0,
+    "DiagramY": 38.0
+  },
+  {
+    "Code": "41",
+    "DescriptionGr": "ΚΡΥΣΤΑΛΛΟ  ΠΟΡΤΑΣ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 82.0,
+    "DiagramY": 44.0
+  },
+  {
+    "Code": "42",
+    "DescriptionGr": "ΚΡΥΣΤΑΛΛΟ ΠΟΡΤΑΣ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 82.0,
+    "DiagramY": 58.0
+  },
+  {
+    "Code": "43",
+    "DescriptionGr": "ΦΙΝΙΣΤΡΙΝΙ ΦΤΕΡΟΎ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 80.0,
+    "DiagramY": 65.0
+  },
+  {
+    "Code": "44",
+    "DescriptionGr": "ΚΡΥΣΤΑΛΛΟ ΠΟΡΤΑΣ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 18.0,
+    "DiagramY": 44.0
+  },
+  {
+    "Code": "45",
+    "DescriptionGr": "ΚΡΥΣΤΑΛΛΟ ΠΟΡΤΑΣ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 18.0,
+    "DiagramY": 58.0
+  },
+  {
+    "Code": "46",
+    "DescriptionGr": "ΦΙΝΙΣΤΡΙΝΙ ΠΙΣΩ ΑΡΙΣΤΕΡΟΥ ΦΤΕΡΟΥ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 20.0,
+    "DiagramY": 65.0
+  },
+  {
+    "Code": "47",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 78.0,
+    "DiagramY": 35.0
+  },
+  {
+    "Code": "48",
+    "DescriptionGr": "ΤΟΞΟ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 78.0,
+    "DiagramY": 50.0
+  },
+  {
+    "Code": "49",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 78.0,
+    "DiagramY": 64.0
+  },
+  {
+    "Code": "50",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 22.0,
+    "DiagramY": 35.0
+  },
+  {
+    "Code": "51",
+    "DescriptionGr": "ΤΟΞΟ  ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 22.0,
+    "DiagramY": 50.0
+  },
+  {
+    "Code": "52",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 22.0,
+    "DiagramY": 64.0
+  },
+  {
+    "Code": "53",
+    "DescriptionGr": "ΚΑΘΡΕΠΤΗΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Left",
+    "DiagramX": 4.0,
+    "DiagramY": 37.0
+  },
+  {
+    "Code": "54",
+    "DescriptionGr": "ΚΑΘΡΕΠΤΗΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "External",
+    "Side": "Right",
+    "DiagramX": 96.0,
+    "DiagramY": 37.0
+  },
+  {
+    "Code": "55",
+    "DescriptionGr": "ΤΡΙΜ ΠΟΡΤΑΣ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "56",
+    "DescriptionGr": "ΤΡΙΜ ΠΟΡΤΑΣ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "57",
+    "DescriptionGr": "ΤΡΙΜ ΠΟΡΤΑΣ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "58",
+    "DescriptionGr": "ΤΡΙΜ ΠΟΡΤΑΣ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "59",
+    "DescriptionGr": "ΠΕΤΟΥΓΙΑ ΠΟΡΤΑΣ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "60",
+    "DescriptionGr": "ΠΕΤΟΥΓΙΑ ΠΟΡΤΑΣ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "61",
+    "DescriptionGr": "ΠΕΤΟΥΓΙΑ ΠΟΡΤΑΣ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "62",
+    "DescriptionGr": "ΠΕΤΟΥΓΙΑ ΠΟΡΤΑΣ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "63",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΕΜΠΡΟΣ ΕΣΩΤΕΡΙΚΗ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "64",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΜΕΣΑΙΑ ΕΣΩΤΕΡΙΚΗ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "65",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΕΜΠΡΟΣ ΕΣΩΤΕΡΙΚΗ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "66",
+    "DescriptionGr": "ΚΟΛΩΝΑ ΜΕΣΑΙΑ ΕΣΩΤΕΡΙΚΗ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "67Α",
+    "DescriptionGr": "ΓΡΥΛΟΣ ΠΑΡΑΘΥΡΟΥ ΕΜΠΡΟΣ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "67Β",
+    "DescriptionGr": "ΓΡΥΛΟΣ ΠΑΡΑΘΥΡΟΥ ΕΜΠΡΟΣ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "67Γ",
+    "DescriptionGr": "ΓΡΥΛΟΣ ΠΑΡΑΘΥΡΟΥ ΠΙΣΩ ΑΡΙΣΤΕΡΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Left",
+    "DiagramX": null,
+    "DiagramY": null
+  },
+  {
+    "Code": "67Δ",
+    "DescriptionGr": "ΓΡΥΛΟΣ ΠΑΡΑΘΥΡΟΥ ΠΙΣΩ ΔΕΞΙΑ",
+    "DescriptionEn": null,
+    "Category": "Internal",
+    "Side": "Right",
+    "DiagramX": null,
+    "DiagramY": null
+  }
+]

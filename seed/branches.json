@@ -1,0 +1,14 @@
+[
+  {
+    "Name": "Κεντρικό — Ταύρος",
+    "Code": "TAVROS",
+    "AddressLine": "Παν. Τσαλδάρη 41",
+    "City": "Ταύρος",
+    "PostalCode": null,
+    "Phone": "2102202898",
+    "Warehouse": {
+      "Name": "Αποθήκη Ταύρος",
+      "Description": null
+    }
+  }
+]

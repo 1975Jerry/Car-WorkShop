@@ -1,0 +1,47 @@
+@using MudBlazor
+@using Workshop.Application.Features.InsurerPortal
+@using Workshop.Domain.Enums
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        @if (Decision == ApprovalStatus.Approved)
+        {
+            <MudNumericField T="decimal" @bind-Value="_amount" Label="@L["ApprovedAmount"]" Min="0"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Format="N2" />
+        }
+        <MudTextField @bind-Value="_notes" Label="@L["Notes"]" Lines="4"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2"
+                      Required="@(Decision == ApprovalStatus.Rejected)" />
+        @if (Decision == ApprovalStatus.Rejected)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["RejectReasonRequired"]</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="@(Decision == ApprovalStatus.Approved ? Color.Success : Color.Error)"
+                   OnClick="Ok" Disabled="@CannotSubmit">
+            @(Decision == ApprovalStatus.Approved ? L["Approve"] : L["Reject"])
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public ApprovalStatus Decision { get; set; }
+    [Parameter] public decimal InitialAmount { get; set; }
+
+    private decimal _amount;
+    private string? _notes;
+
+    protected override void OnInitialized() => _amount = InitialAmount;
+
+    private bool CannotSubmit =>
+        (Decision == ApprovalStatus.Approved && _amount < 0)
+        || (Decision == ApprovalStatus.Rejected && string.IsNullOrWhiteSpace(_notes));
+
+    private void Ok() => Dialog.Close(DialogResult.Ok(new InsurerDecisionDto(_amount, _notes)));
+    private void Cancel() => Dialog.Cancel();
+}

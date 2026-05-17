@@ -427,3 +427,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+## Paint Bull project-specific
+appsettings.Local.json
+appsettings.*.Local.json
+.env.local
+logs/
+coverage/

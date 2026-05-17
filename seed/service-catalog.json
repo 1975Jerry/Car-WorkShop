@@ -1,0 +1,7 @@
+[
+  { "Code": "SUN_FILMS",       "NameGr": "Αντηλιακές Μεμβράνες",  "NameEn": "Sun films",         "DefaultPrice": null },
+  { "Code": "POLISH",          "NameGr": "Γυάλισμα",               "NameEn": "Polish",            "DefaultPrice": null },
+  { "Code": "BIO_CLEAN",       "NameGr": "Βιολογικός Καθαρισμός",  "NameEn": "Detailing",         "DefaultPrice": null },
+  { "Code": "EXT_REPAIRS",     "NameGr": "Επισκευές Εξωτερικά",    "NameEn": "External Repairs",  "DefaultPrice": null },
+  { "Code": "WINDOW_REGS",     "NameGr": "Γρύλοι Παραθύρων",       "NameEn": "Window Regulators", "DefaultPrice": null }
+]

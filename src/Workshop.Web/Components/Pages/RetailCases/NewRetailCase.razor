@@ -1,0 +1,141 @@
+@page "/cases/retail/new"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.RetailCases
+@using Workshop.Application.Features.Vehicles
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["NewRetailCase"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["NewRetailCase"]</MudText>
+
+<MudPaper Class="pa-4" Elevation="0" Outlined>
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
+                             Value="_customer" ValueChanged="OnCustomerChanged"
+                             ToStringFunc="@(x => x?.Label ?? "")"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Required ShowProgressIndicator />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="Guid?" @bind-Value="_data.VehicleId" Label="@L["Vehicle"]"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Required Disabled="@(_customer is null)">
+                @foreach (var v in _vehicles)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)v.Id)">@v.PlateNumber — @v.Brand @v.Model</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="Guid?" @bind-Value="_data.BranchId" Label="@L["Branch"]"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                @foreach (var b in _branches)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudDatePicker @bind-Date="_scheduledDate" Label="@L["ScheduledDate"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="_data.WorkType" Label="@L["WorkType"]" Required
+                          Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="300" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudNumericField @bind-Value="_data.FinalCost" Label="@L["FinalCost"]" Min="0" Format="N2"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudNumericField @bind-Value="_data.VatAmount" Label="@L["VatAmount"]" Min="0" Format="N2"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudField Label="@L["TotalWithVat"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                @((_data.FinalCost + _data.VatAmount).ToString("N2"))
+            </MudField>
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="3"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row Class="mt-4" Justify="Justify.FlexEnd">
+        <MudButton OnClick="@(() => Nav.NavigateTo("/cases/retail"))">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@_saving">@L["Create"]</MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private FormModel _data = new();
+    private LookupItem? _customer;
+    private DateTime? _scheduledDate;
+    private bool _saving;
+    private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
+    private IReadOnlyList<VehicleListItemDto> _vehicles = Array.Empty<VehicleListItemDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _branches = await Mediator.Send(new GetBranchLookupQuery());
+    }
+
+    private async Task<IEnumerable<LookupItem>> SearchCustomers(string? value, CancellationToken ct) =>
+        await Mediator.Send(new GetCustomerLookupQuery(value), ct);
+
+    private async Task OnCustomerChanged(LookupItem? c)
+    {
+        _customer = c;
+        _data.CustomerId = c?.Id ?? Guid.Empty;
+        _data.VehicleId = null;
+        if (c is null) { _vehicles = Array.Empty<VehicleListItemDto>(); return; }
+        var page = await Mediator.Send(new ListVehiclesQuery(CustomerId: c.Id, PageSize: 100));
+        _vehicles = page.Items;
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            if (_data.CustomerId == Guid.Empty || _data.VehicleId is null
+                || _data.BranchId is null || string.IsNullOrWhiteSpace(_data.WorkType))
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                return;
+            }
+
+            var dto = new RetailCaseUpsertDto(
+                _data.CustomerId, _data.VehicleId.Value, _data.BranchId.Value,
+                AssignedUserId: null,
+                _data.WorkType, _data.FinalCost, _data.VatAmount,
+                _scheduledDate is null ? null : DateOnly.FromDateTime(_scheduledDate.Value),
+                _data.Notes);
+
+            var id = await Mediator.Send(new CreateRetailCaseCommand(dto));
+            Snackbar.Add(L["RetailCaseCreated"], Severity.Success);
+            Nav.NavigateTo($"/cases/retail/{id}");
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+
+    private class FormModel
+    {
+        public Guid CustomerId { get; set; }
+        public Guid? VehicleId { get; set; }
+        public Guid? BranchId { get; set; }
+        public string WorkType { get; set; } = string.Empty;
+        public decimal FinalCost { get; set; }
+        public decimal VatAmount { get; set; }
+        public string? Notes { get; set; }
+    }
+}

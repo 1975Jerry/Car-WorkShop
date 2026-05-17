@@ -1,0 +1,78 @@
+@page "/portal"
+@page "/portal/cases"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "CustomerPortal")]
+@layout Workshop.Web.Components.Layout.PortalLayout
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Common.Abstractions
+@using Workshop.Application.Features.CustomerPortal
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject ICurrentUserService CurrentUser
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["MyCases"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@L["MyCases"]</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else if (_cases.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">@L["NoCasesYet"]</MudAlert>
+}
+else
+{
+    <MudList T="MyCaseListItemDto" Dense="false">
+        @foreach (var c in _cases)
+        {
+            <MudListItem T="MyCaseListItemDto" Value="c"
+                         OnClick="@(() => OpenCase(c))" Class="my-2">
+                <MudPaper Class="pa-3" Outlined Elevation="0" Style="width: 100%;">
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <div>
+                            <MudText Typo="Typo.h6">@c.CaseNumber</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @c.VehiclePlate · @c.VehicleBrandModel
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @c.BranchName
+                            </MudText>
+                        </div>
+                        <div>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(c.Kind == PortalCaseKind.Insurance ? Color.Info : Color.Primary)">
+                                @c.StatusLabel
+                            </MudChip>
+                        </div>
+                    </MudStack>
+                </MudPaper>
+            </MudListItem>
+        }
+    </MudList>
+}
+
+@code {
+    private bool _loading = true;
+    private IReadOnlyList<MyCaseListItemDto> _cases = Array.Empty<MyCaseListItemDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var customerId = CurrentUser.CustomerId;
+        if (customerId is null)
+        {
+            _loading = false;
+            return;
+        }
+        _cases = await Mediator.Send(new ListMyCasesQuery(customerId.Value));
+        _loading = false;
+    }
+
+    private void OpenCase(MyCaseListItemDto c)
+    {
+        var kind = c.Kind == PortalCaseKind.Insurance ? "insurance" : "retail";
+        Nav.NavigateTo($"/portal/cases/{kind}/{c.Id}");
+    }
+}

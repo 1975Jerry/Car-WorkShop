@@ -1,0 +1,65 @@
+@page "/admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["Admin"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-2">@L["Admin"]</MudText>
+<MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">@L["AdminSubtitle"]</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="6" lg="4">
+        <MudCard Outlined Class="cursor-pointer" @onclick="@(() => Nav.NavigateTo("/admin/branches"))">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Class="mt-2">@L["Branches"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["BranchesHint"]</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="4">
+        <MudCard Outlined Class="cursor-pointer" @onclick="@(() => Nav.NavigateTo("/admin/insurance-companies"))">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.Shield" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Class="mt-2">@L["InsuranceCompanies"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["InsuranceCompaniesHint"]</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="4">
+        <MudCard Outlined Class="cursor-pointer" @onclick="@(() => Nav.NavigateTo("/admin/assessors"))">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Class="mt-2">@L["Assessors"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["AssessorsHint"]</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="4">
+        <MudCard Outlined Class="cursor-pointer" @onclick="@(() => Nav.NavigateTo("/admin/adjusters"))">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.Handshake" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Class="mt-2">@L["Adjusters"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["AdjustersHint"]</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="4">
+        <MudCard Outlined Class="cursor-pointer" @onclick="@(() => Nav.NavigateTo("/admin/suppliers"))">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Class="mt-2">@L["Suppliers"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SuppliersHint"]</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<style>
+    .cursor-pointer { cursor: pointer; transition: box-shadow 0.15s; }
+    .cursor-pointer:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
+</style>
+
+@code {
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+}
