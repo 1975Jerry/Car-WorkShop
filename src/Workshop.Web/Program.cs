@@ -119,6 +119,24 @@ try
         Predicate = c => c.Tags.Contains("ready")
     });
 
+    // Language toggle from MainLayout's globe icon — writes the
+    // RequestLocalization culture cookie and bounces back to the page that
+    // sent the user. Two-step (full reload) because the Blazor circuit caches
+    // the IStringLocalizer's CultureInfo for the life of the circuit.
+    app.MapGet("/api/culture", (string culture, string? redirectUri, HttpContext ctx) =>
+    {
+        var allowed = new[] { "el", "en" };
+        if (!allowed.Contains(culture)) return Results.BadRequest("unsupported culture");
+        var cookieValue = Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(
+            new Microsoft.AspNetCore.Localization.RequestCulture(culture));
+        ctx.Response.Cookies.Append(
+            Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.DefaultCookieName,
+            cookieValue,
+            new CookieOptions { Path = "/", Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true });
+        var target = string.IsNullOrEmpty(redirectUri) || !redirectUri.StartsWith('/') ? "/" : redirectUri;
+        return Results.LocalRedirect(target);
+    });
+
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
 

@@ -99,9 +99,10 @@
 
     private void SetLang(string lang)
     {
-        // Persists culture via cookie middleware on next request
+        // /api/culture writes the RequestLocalization cookie server-side then
+        // bounces back. Full reload is required because the Blazor circuit
+        // caches CultureInfo for IStringLocalizer.
         var uri = new Uri(NavigationManager.Uri).GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
-        var cookie = Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(new(System.Globalization.CultureInfo.GetCultureInfo(lang)));
         NavigationManager.NavigateTo($"/api/culture?culture={lang}&redirectUri={Uri.EscapeDataString(uri)}", forceLoad: true);
     }
 }
