@@ -32,25 +32,22 @@ This document is the single source of truth for the data model and behavior. All
 
 ## 2. Solution layout
 
+Single Blazor Server app serves all four audiences. No per-portal SPA, no shared REST API. The original four-project split was discarded once it became clear Blazor Server pages would call MediatR handlers directly — see §8 "Resolved" item on portal split.
+
 ```
 CARWorshoNew/
 ├── DOMAIN-MODEL.md                  # ← this file
 ├── src/
 │   ├── Workshop.Domain/             # Entities, enums, value objects, workflow state machine
-│   ├── Workshop.Application/        # Use cases, DTOs, validators, interfaces
-│   ├── Workshop.Infrastructure/     # EF Core DbContext, migrations, file storage, email/SMS
-│   ├── Workshop.Web/                # Blazor Server — main staff app (MudBlazor)
-│   ├── Workshop.Portal.Customer/    # Customer self-service portal
-│   ├── Workshop.Portal.Insurance/   # Insurance company reviewer portal
-│   ├── Workshop.Portal.Supplier/    # Supplier order portal
-│   └── Workshop.Api/                # Shared REST API for the 3 external portals
+│   ├── Workshop.Application/        # Use cases, DTOs, validators, notification + myDATA abstractions
+│   ├── Workshop.Infrastructure/     # EF Core DbContext, migrations, file storage, stub adapters
+│   └── Workshop.Web/                # Blazor Server — staff + customer + insurer + supplier UIs
 ├── tests/
-│   ├── Workshop.Domain.Tests/       # Workflow state machine tests, value object tests
-│   └── Workshop.Application.Tests/  # Use case tests with InMemory or Testcontainers
+│   ├── Workshop.Domain.Tests/       # Workflow state machine tests
+│   └── Workshop.Application.Tests/  # Use case tests (EF InMemory)
 ├── seed/
 │   ├── body-panels.json             # 78 panels from ΜΕΡΗ ΑΥΤΟΚΙΝΗΤΟΥ2.xlsx
 │   ├── body-panel-operations.json   # Allowed-ops matrix
-│   ├── parts-catalog.json           # Hierarchical taxonomy from ΜΕΡΗ ΑΥΤΟΚΙΝΗΤΟΥ.docx
 │   └── insurance-companies.json     # Greek insurance companies (seed list)
 └── docker-compose.yml               # PostgreSQL + pgAdmin for local dev
 ```
@@ -683,12 +680,13 @@ Branch scoping: a `BranchManager` sees only their `BranchId`. `Admin` and `BodyS
 4. **Damage diagram interactive UI** — ✅ `BodyPanelPicker.razor` renders the SVG with clickable hotspots driven by `BodyPanel.DiagramX/Y`.
 5. **Default admin credentials** — ✅ auto-generated on first seed run, printed to console.
 6. **Multi-tenancy readiness** — ✅ confirmed single-tenant. No `TenantId` on entities.
+7. **Portal project split** — ✅ rejected. `Workshop.Portal.Customer/Insurance/Supplier` and `Workshop.Api` were deleted; all four audiences are served by `Workshop.Web` Blazor Server pages calling MediatR handlers directly.
 
 ### Still open
 1. **`PartCatalog` entity** — the hierarchical parts taxonomy from `ΜΕΡΗ ΑΥΤΟΚΙΝΗΤΟΥ.docx` is not modelled. Decide whether the autocomplete catalog adds enough value to justify the entity + seed.
 2. **`AuditLog` writer** — entity is in the schema but the EF interceptor only stamps `Created/UpdatedAt/By`. The PII-read audit promised in §6 is not enforced.
 3. **Account management UI** — Identity supports password reset / email confirmation / lockout / MFA but no pages exist beyond Login + Logout. No staff/user admin page either.
-4. **Portal project split** — the standalone `Workshop.Portal.*` and `Workshop.Api` projects are reserved scaffolds. Portal UIs currently live inside `Workshop.Web`. Decide whether to split or delete.
+4. **Webhook receivers** — once the real AADE adapter and a payment gateway land, their inbound webhooks (cancellations, async MARK confirmations, payment notifications) need endpoints inside `Workshop.Web` (e.g. `/webhooks/mydata/*`, `/webhooks/payments/*`). No separate API project — the four standalone scaffolds were deleted in favour of a single-app architecture.
 
 ---
 

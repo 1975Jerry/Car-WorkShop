@@ -54,16 +54,9 @@ dotnet run --project src/Workshop.Web
 
 Open `https://localhost:5001` (port varies — check console output).
 
-### 4. Other apps
+### 4. Portals
 
-The customer, insurer, and supplier portals are currently served inside `Workshop.Web` under `/portal`, `/insurer`, and `/supplier` routes — sign in as a user with the matching `PortalAudience`. The standalone projects below are reserved scaffolds for the eventual split (see *Known issues* below).
-
-```bash
-dotnet run --project src/Workshop.Api               # placeholder REST API (stub endpoints only)
-dotnet run --project src/Workshop.Portal.Customer   # scaffold — not yet implemented
-dotnet run --project src/Workshop.Portal.Insurance  # scaffold — not yet implemented
-dotnet run --project src/Workshop.Portal.Supplier   # scaffold — not yet implemented
-```
+The customer, insurer, and supplier portals are served by `Workshop.Web` itself under `/portal`, `/insurer`, and `/supplier`. Sign in as a user whose `PortalAudience` matches — the layout and route guards switch automatically. Single-app architecture is intentional: Blazor Server calls MediatR handlers directly with no per-portal SPA or REST hop.
 
 ## Common tasks
 
@@ -93,11 +86,7 @@ dotnet ef database update \
 | `Workshop.Domain` | Entities, enums, value objects, `InsuranceCaseStateMachine` |
 | `Workshop.Application` | Use cases, validators, DTOs, notification + myDATA abstractions |
 | `Workshop.Infrastructure` | EF Core `WorkshopDbContext`, Identity, file storage, seed runner, stub adapters (email/SMS/myDATA) |
-| `Workshop.Web` | Main Blazor Server app — staff UI plus the customer (`/portal`), insurer (`/insurer`), and supplier (`/supplier`) portals |
-| `Workshop.Portal.Customer` | Reserved scaffold for the eventual customer-portal split |
-| `Workshop.Portal.Insurance` | Reserved scaffold for the eventual insurer-portal split |
-| `Workshop.Portal.Supplier` | Reserved scaffold for the eventual supplier-portal split |
-| `Workshop.Api` | Reserved scaffold for the eventual external REST API |
+| `Workshop.Web` | Single Blazor Server app — staff UI plus the customer (`/portal`), insurer (`/insurer`), and supplier (`/supplier`) portals |
 | `tests/Workshop.Domain.Tests` | xUnit v3 tests — state machine (14) |
 | `tests/Workshop.Application.Tests` | xUnit v3 tests — application use cases, dispatchers, myDATA (157) |
 
@@ -133,8 +122,8 @@ All 11 phases from [DOMAIN-MODEL.md §9](DOMAIN-MODEL.md) are in. External-integ
 
 ## Known issues / tech debt
 
-- **Standalone portal projects + `Workshop.Api` are scaffolds.** Portal UIs live inside `Workshop.Web`; the four side projects are reserved for the eventual split + external-token REST API.
 - **External integrations are stubs.** `IEmailSender`, `ISmsSender`, `IMyDataClient`, and `IFileStore` need real adapters (SMTP/SendGrid, Twilio/Vonage, AADE sandbox, S3/Azure Blob).
+- **Webhook receivers are not yet wired.** When the real AADE adapter and a payment gateway land, their inbound webhooks (cancellations, asynchronous MARK confirmations, payment notifications) need endpoints inside `Workshop.Web` — likely under `/webhooks/*`.
 - **No background-job runner.** Hangfire is listed in the stack but not wired — needed for reminders (vehicle insurance expiration), notification batching, and scheduled myDATA submissions.
 - **Account management is bare.** Only login/logout pages exist — no password reset, email confirmation, MFA enrolment, profile, or staff/user admin page. Identity tables already carry the columns.
 - **Audit gap.** `AuditLog` entity exists and is in the schema, but `AuditSaveChangesInterceptor` only stamps `Created/UpdatedAt/By` — it does not write `AuditLog` rows yet. Only `CaseEvent` (workflow transitions) is audited.

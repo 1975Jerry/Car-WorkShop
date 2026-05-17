@@ -17,7 +17,7 @@ public class MyDataSubmissionTests
         var (_, quoteId) = await SeedAsync(db);
 
         var client = new RecordingClient();
-        var handler = new SubmitQuoteToMyDataHandler(db, client, TimeProvider.System);
+        var handler = new SubmitQuoteToMyDataHandler(db, client);
 
         var mark = await handler.Handle(new SubmitQuoteToMyDataCommand(quoteId), CancellationToken.None);
 
@@ -39,7 +39,7 @@ public class MyDataSubmissionTests
         quote.MyDataMark = "OLD-MARK";
         await db.SaveChangesAsync();
 
-        var handler = new SubmitQuoteToMyDataHandler(db, new RecordingClient(), TimeProvider.System);
+        var handler = new SubmitQuoteToMyDataHandler(db, new RecordingClient());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.Handle(new SubmitQuoteToMyDataCommand(quoteId), CancellationToken.None));
@@ -50,7 +50,7 @@ public class MyDataSubmissionTests
     {
         await using var db = TestDb.NewContext();
         var (_, quoteId) = await SeedAsync(db);
-        var handler = new SubmitQuoteToMyDataHandler(db, new FailingClient(), TimeProvider.System);
+        var handler = new SubmitQuoteToMyDataHandler(db, new FailingClient());
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.Handle(new SubmitQuoteToMyDataCommand(quoteId), CancellationToken.None));
