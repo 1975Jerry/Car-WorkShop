@@ -279,24 +279,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var kpisTask = Mediator.Send(new GetDashboardKpisQuery());
-        var branchesTask = Mediator.Send(new GetBranchBreakdownQuery());
-        var agingTask = Mediator.Send(new GetAgingBucketsQuery());
-        var varianceTask = Mediator.Send(new GetPartsVarianceQuery());
-        var throughputTask = Mediator.Send(new GetThroughputTrendQuery());
-        var revenueTask = Mediator.Send(new GetRevenuePeriodQuery());
-        var todayTask = Mediator.Send(new GetTodayRepairsQuery());
-
-        await Task.WhenAll(kpisTask, branchesTask, agingTask, varianceTask,
-                           throughputTask, revenueTask, todayTask);
-
-        _kpis = await kpisTask;
-        _branches = await branchesTask;
-        _aging = await agingTask;
-        _variance = await varianceTask;
-        _throughput = await throughputTask;
-        _revenue = await revenueTask;
-        _today = await todayTask;
+        // Sequential, not Task.WhenAll: handlers share a single scoped
+        // DbContext per Blazor circuit and EF Core forbids concurrent use.
+        _kpis = await Mediator.Send(new GetDashboardKpisQuery());
+        _branches = await Mediator.Send(new GetBranchBreakdownQuery());
+        _aging = await Mediator.Send(new GetAgingBucketsQuery());
+        _variance = await Mediator.Send(new GetPartsVarianceQuery());
+        _throughput = await Mediator.Send(new GetThroughputTrendQuery());
+        _revenue = await Mediator.Send(new GetRevenuePeriodQuery());
+        _today = await Mediator.Send(new GetTodayRepairsQuery());
 
         _throughputLabels = _throughput.Select(r => r.WeekStart.ToString("dd/MM")).ToArray();
         _throughputSeries = new List<ChartSeries<double>>

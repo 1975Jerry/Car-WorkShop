@@ -11,7 +11,7 @@ using Workshop.Infrastructure.Persistence;
 
 namespace Workshop.Infrastructure.Seeding;
 
-public class SeedRunner
+public partial class SeedRunner
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -52,6 +52,7 @@ public class SeedRunner
         await _db.SaveChangesAsync(ct);
         await SeedDemoPortalUsersAsync(ct);
         await _db.SaveChangesAsync(ct);
+        await SeedDemoCasesAsync(ct);
         _log.LogInformation("Seed complete.");
     }
 
