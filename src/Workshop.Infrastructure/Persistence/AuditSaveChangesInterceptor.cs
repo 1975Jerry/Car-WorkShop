@@ -78,3 +78,10 @@ public class NullCurrentUserService : ICurrentUserService
     public bool IsInRole(string role) => false;
     public bool IsAnyOf(params string[] roles) => false;
 }
+
+// Default for migrations / tests / background jobs that have no UI: no override.
+public class NullBranchScopeState : IBranchScopeState
+{
+    public Guid? OverrideBranchId => null;
+    public void SetOverride(Guid? branchId) { /* no-op */ }
+}

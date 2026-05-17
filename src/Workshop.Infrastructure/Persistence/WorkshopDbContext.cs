@@ -14,18 +14,34 @@ namespace Workshop.Infrastructure.Persistence;
 public class WorkshopDbContext : IdentityDbContext<User, Role, Guid>, IWorkshopDbContext
 {
     private readonly ICurrentUserService _currentUser;
+    private readonly IBranchScopeState? _scopeState;
 
-    public WorkshopDbContext(DbContextOptions<WorkshopDbContext> options, ICurrentUserService currentUser)
+    public WorkshopDbContext(
+        DbContextOptions<WorkshopDbContext> options,
+        ICurrentUserService currentUser,
+        IBranchScopeState? scopeState = null)
         : base(options)
     {
         _currentUser = currentUser;
+        _scopeState = scopeState;
     }
 
-    // Used by branch-scope query filters. Returns null (= "see all") when the
-    // current user is an Admin OR has no branch assigned (e.g. portal users,
-    // background jobs, tests). EF Core re-evaluates per query.
+    // Used by branch-scope query filters. EF Core re-evaluates per query.
+    //   - Admin: defaults to null (see all), but if the user picked a branch
+    //     in the app-bar selector, scope to that one.
+    //   - Non-admin: always locked to their assigned BranchId. The override
+    //     is ignored — non-admins shouldn't see the picker anyway, but
+    //     defense in depth.
+    //   - Anonymous / portal user / migrations / tests: null (= see all).
     public Guid? CurrentScopeBranchId
-        => _currentUser.IsInRole(RoleNames.Admin) ? null : _currentUser.BranchId;
+    {
+        get
+        {
+            if (_currentUser.IsInRole(RoleNames.Admin))
+                return _scopeState?.OverrideBranchId;
+            return _currentUser.BranchId;
+        }
+    }
 
     // Shared
     public DbSet<CompanyProfile> CompanyProfiles => Set<CompanyProfile>();

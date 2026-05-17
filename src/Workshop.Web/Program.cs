@@ -42,6 +42,7 @@ try
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
+    builder.Services.AddScoped<IBranchScopeState, CircuitBranchScopeState>();
 
     // /health/live — process is up; /health/ready — DB reachable.
     builder.Services.AddHealthChecks()

@@ -1,5 +1,13 @@
 @inherits LayoutComponentBase
+@using MediatR
+@using Workshop.Application.Common.Abstractions
+@using Workshop.Application.Features.Branches
+@using Workshop.Domain.Entities.Identity
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+@inject IMediator Mediator
+@inject ICurrentUserService CurrentUser
+@inject IBranchScopeState ScopeState
+@inject NavigationManager NavigationManager
 
 <MudThemeProvider Theme="@Workshop.Web.Theme.PaintBullTheme.Light" IsDarkMode="@_isDark" />
 <MudPopoverProvider />
@@ -11,10 +19,18 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" OnClick="ToggleDrawer" Edge="Edge.Start" />
         <MudText Typo="Typo.h6" Class="ms-3">Paint Bull</MudText>
         <MudSpacer />
-        <MudSelect T="string" Value="@_branchSelected" ValueChanged="OnBranchChanged" Dense Margin="Margin.None" Variant="Variant.Outlined" Style="max-width:200px; background:white; border-radius:4px;">
-            <MudSelectItem Value="@("all")">@L["AllBranches"]</MudSelectItem>
-            <MudSelectItem Value="@("tavros")">Tavros</MudSelectItem>
-        </MudSelect>
+        @if (_canSwitchBranch && _branches.Count > 0)
+        {
+            <MudSelect T="Guid?" Value="@_selectedBranchId" ValueChanged="OnBranchChanged"
+                       Dense Margin="Margin.None" Variant="Variant.Outlined"
+                       Style="max-width:220px; background:white; border-radius:4px;">
+                <MudSelectItem T="Guid?" Value="@((Guid?)null)">@L["AllBranches"]</MudSelectItem>
+                @foreach (var b in _branches)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Name</MudSelectItem>
+                }
+            </MudSelect>
+        }
         <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit">
             <MudMenuItem OnClick="@(() => SetLang("el"))">Ελληνικά</MudMenuItem>
             <MudMenuItem OnClick="@(() => SetLang("en"))">English</MudMenuItem>
@@ -53,10 +69,32 @@
 @code {
     private bool _drawerOpen = true;
     private bool _isDark;
-    private string _branchSelected = "all";
+    private bool _canSwitchBranch;
+    private Guid? _selectedBranchId;
+    private IReadOnlyList<BranchListItemDto> _branches = Array.Empty<BranchListItemDto>();
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
-    private void OnBranchChanged(string value) => _branchSelected = value;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _canSwitchBranch = CurrentUser.IsInRole(RoleNames.Admin);
+        if (!_canSwitchBranch) return;
+
+        var page = await Mediator.Send(new ListBranchesQuery(IsActive: true, PageSize: 200));
+        _branches = page.Items.OrderBy(b => b.Name).ToList();
+        _selectedBranchId = ScopeState.OverrideBranchId;
+    }
+
+    private void OnBranchChanged(Guid? branchId)
+    {
+        if (_selectedBranchId == branchId) return;
+        _selectedBranchId = branchId;
+        ScopeState.SetOverride(branchId);
+        // Force-reload the current page so any query that ran during OnInitializedAsync
+        // re-evaluates under the new scope.
+        var current = new Uri(NavigationManager.Uri).GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+        NavigationManager.NavigateTo(current, forceLoad: true);
+    }
 
     private void SetLang(string lang)
     {
@@ -65,6 +103,4 @@
         var cookie = Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(new(System.Globalization.CultureInfo.GetCultureInfo(lang)));
         NavigationManager.NavigateTo($"/api/culture?culture={lang}&redirectUri={Uri.EscapeDataString(uri)}", forceLoad: true);
     }
-
-    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 }

@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddScoped<ICurrentUserService, NullCurrentUserService>(); // Web layer overrides with HTTP-aware impl
+        services.AddScoped<IBranchScopeState, NullBranchScopeState>(); // Web layer overrides with a circuit-scoped impl
 
         services.AddDbContext<WorkshopDbContext>((sp, options) =>
         {
