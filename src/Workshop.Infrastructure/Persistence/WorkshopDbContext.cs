@@ -73,6 +73,7 @@ public class WorkshopDbContext : IdentityDbContext<User, Role, Guid>, IWorkshopD
     public DbSet<RetailCase> RetailCases => Set<RetailCase>();
     public DbSet<RetailPartLine> RetailPartLines => Set<RetailPartLine>();
     public DbSet<RetailRepair> RetailRepairs => Set<RetailRepair>();
+    public DbSet<RetailCasePanel> RetailCasePanels => Set<RetailCasePanel>();
 
     // Cross-cutting
     public DbSet<CaseEvent> CaseEvents => Set<CaseEvent>();

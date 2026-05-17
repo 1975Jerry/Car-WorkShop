@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Workshop.Domain.Entities.CrossCutting;
 using Workshop.Domain.Entities.Identity;
 using Workshop.Domain.Entities.Insurance;
 using Workshop.Domain.Entities.Retail;
@@ -25,8 +26,10 @@ public partial class SeedRunner
             return;
         }
 
-        var branch = await _db.Branches.OrderBy(b => b.Name).FirstOrDefaultAsync(ct);
-        if (branch is null)
+        var branches = await _db.Branches
+            .Where(b => b.IsActive)
+            .OrderBy(b => b.Name).ToListAsync(ct);
+        if (branches.Count == 0)
         {
             _log.LogWarning("Demo cases skipped: no branches exist.");
             return;
@@ -64,7 +67,7 @@ public partial class SeedRunner
                     caseNumber: $"INS-DEMO-{seq:D4}",
                     customer: PickFrom(customers, rng),
                     vehicle: PickFrom(vehicles, rng),
-                    branch: branch,
+                    branch: branches[seq % branches.Count],
                     insurer: PickFrom(insurers, rng),
                     panels: panels,
                     responsibleUserId: adminUser.Id,
@@ -82,7 +85,7 @@ public partial class SeedRunner
                     caseNumber: $"RET-DEMO-{seq:D4}",
                     customer: PickFrom(customers, rng),
                     vehicle: PickFrom(vehicles, rng),
-                    branch: branch,
+                    branch: branches[seq % branches.Count],
                     rng: rng);
             }
         }
@@ -486,6 +489,136 @@ public partial class SeedRunner
         }
         await _db.SaveChangesAsync(ct);
         return list;
+    }
+
+    // Existing demos were seeded against a single branch; if a 2nd branch has since
+    // appeared (e.g. added via seed file or admin UI), spread the demo cases so the
+    // branch selector + breakdown actually shows variation. Real (non-demo) cases
+    // are left untouched.
+    private async Task RebalanceDemoCasesAcrossBranchesAsync(CancellationToken ct)
+    {
+        var branches = await _db.Branches.Where(b => b.IsActive).OrderBy(b => b.Code).ToListAsync(ct);
+        if (branches.Count < 2) return;
+
+        var insurance = await _db.InsuranceCases
+            .Where(c => c.CaseNumber.StartsWith("INS-DEMO-"))
+            .OrderBy(c => c.CaseNumber).ToListAsync(ct);
+        var retail = await _db.RetailCases
+            .Where(c => c.CaseNumber.StartsWith("RET-DEMO-"))
+            .OrderBy(c => c.CaseNumber).ToListAsync(ct);
+        if (insurance.Count == 0 && retail.Count == 0) return;
+
+        var distinct = insurance.Select(c => c.BranchId)
+            .Concat(retail.Select(c => c.BranchId))
+            .Distinct().Count();
+        if (distinct >= branches.Count) return; // already spread
+
+        var rebalanced = 0;
+        for (var i = 0; i < insurance.Count; i++)
+        {
+            var target = branches[i % branches.Count].Id;
+            if (insurance[i].BranchId != target) { insurance[i].BranchId = target; rebalanced++; }
+        }
+        for (var i = 0; i < retail.Count; i++)
+        {
+            var target = branches[i % branches.Count].Id;
+            if (retail[i].BranchId != target) { retail[i].BranchId = target; rebalanced++; }
+        }
+        if (rebalanced > 0)
+        {
+            await _db.SaveChangesAsync(ct);
+            _log.LogInformation("Rebalanced {n} demo cases across {b} branches.", rebalanced, branches.Count);
+        }
+    }
+
+    // Demo cases set Status directly without recording the transitions, so the
+    // Timeline tab is empty. Walk each case from stage 1 → its current stage and
+    // synthesize CaseEvent rows. Idempotent: skips cases that already have events.
+    private async Task BackfillDemoCaseEventsAsync(CancellationToken ct)
+    {
+        var admin = await _db.Users.FirstOrDefaultAsync(u => u.Email == "admin@paintbull.local", ct);
+        if (admin is null) return;
+
+        // Insurance side
+        var insuranceCases = await _db.InsuranceCases
+            .Where(c => c.CaseNumber.StartsWith("INS-DEMO-"))
+            .ToListAsync(ct);
+        var insuranceWithEvents = await _db.CaseEvents
+            .Where(e => e.InsuranceCaseId != null
+                        && insuranceCases.Select(c => c.Id).Contains(e.InsuranceCaseId!.Value))
+            .Select(e => e.InsuranceCaseId!.Value).Distinct().ToListAsync(ct);
+        var insuranceMissing = insuranceCases.Where(c => !insuranceWithEvents.Contains(c.Id)).ToList();
+
+        var insuranceStages = Enum.GetValues<InsuranceCaseStatus>()
+            .OrderBy(s => (int)s).ToArray();
+        var added = 0;
+        foreach (var c in insuranceMissing)
+        {
+            var endIndex = Array.IndexOf(insuranceStages, c.Status);
+            if (endIndex < 0) continue;
+            var span = TimeSpan.FromTicks(((c.ClosedAt ?? c.UpdatedAt) - c.CreatedAt).Ticks);
+            var stepCount = endIndex + 1; // events from 1st stage through current
+            for (var step = 0; step < stepCount; step++)
+            {
+                var fraction = stepCount == 1 ? 0.0 : (double)step / (stepCount - 1);
+                var occurredAt = c.CreatedAt.AddTicks((long)(span.Ticks * fraction));
+                _db.CaseEvents.Add(new CaseEvent
+                {
+                    InsuranceCaseId = c.Id,
+                    FromStatus = step == 0 ? null : insuranceStages[step - 1].ToString(),
+                    ToStatus = insuranceStages[step].ToString(),
+                    TriggeredById = admin.Id,
+                    OccurredAt = occurredAt,
+                    Reason = "Backfilled by demo seeder",
+                    CreatedAt = occurredAt,
+                    UpdatedAt = occurredAt
+                });
+                added++;
+            }
+        }
+
+        // Retail side
+        var retailCases = await _db.RetailCases
+            .Where(c => c.CaseNumber.StartsWith("RET-DEMO-"))
+            .ToListAsync(ct);
+        var retailWithEvents = await _db.CaseEvents
+            .Where(e => e.RetailCaseId != null
+                        && retailCases.Select(c => c.Id).Contains(e.RetailCaseId!.Value))
+            .Select(e => e.RetailCaseId!.Value).Distinct().ToListAsync(ct);
+        var retailMissing = retailCases.Where(c => !retailWithEvents.Contains(c.Id)).ToList();
+
+        var retailStages = Enum.GetValues<RetailCaseStatus>()
+            .OrderBy(s => (int)s).ToArray();
+        foreach (var c in retailMissing)
+        {
+            var endIndex = Array.IndexOf(retailStages, c.Status);
+            if (endIndex < 0) continue;
+            var span = TimeSpan.FromTicks(((c.CompletedAt ?? c.UpdatedAt) - c.CreatedAt).Ticks);
+            var stepCount = endIndex + 1;
+            for (var step = 0; step < stepCount; step++)
+            {
+                var fraction = stepCount == 1 ? 0.0 : (double)step / (stepCount - 1);
+                var occurredAt = c.CreatedAt.AddTicks((long)(span.Ticks * fraction));
+                _db.CaseEvents.Add(new CaseEvent
+                {
+                    RetailCaseId = c.Id,
+                    FromStatus = step == 0 ? null : retailStages[step - 1].ToString(),
+                    ToStatus = retailStages[step].ToString(),
+                    TriggeredById = admin.Id,
+                    OccurredAt = occurredAt,
+                    Reason = "Backfilled by demo seeder",
+                    CreatedAt = occurredAt,
+                    UpdatedAt = occurredAt
+                });
+                added++;
+            }
+        }
+
+        if (added > 0)
+        {
+            await _db.SaveChangesAsync(ct);
+            _log.LogInformation("Backfilled {n} CaseEvent rows for demo cases.", added);
+        }
     }
 
     private static T PickFrom<T>(IReadOnlyList<T> source, Random rng) => source[rng.Next(source.Count)];

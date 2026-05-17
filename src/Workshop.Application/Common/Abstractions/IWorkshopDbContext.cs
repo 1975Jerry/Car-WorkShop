@@ -39,6 +39,7 @@ public interface IWorkshopDbContext
     DbSet<RetailCase> RetailCases { get; }
     DbSet<RetailPartLine> RetailPartLines { get; }
     DbSet<RetailRepair> RetailRepairs { get; }
+    DbSet<RetailCasePanel> RetailCasePanels { get; }
 
     // Users (read-only views — Identity-managed)
     DbSet<User> Users { get; }

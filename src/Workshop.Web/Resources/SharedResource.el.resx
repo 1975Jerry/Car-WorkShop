@@ -393,4 +393,10 @@
   <data name="NoRepairsScheduled"><value>Δεν υπάρχουν προγραμματισμένες επισκευές σήμερα.</value></data>
   <data name="AvgCycleTime"><value>Μ.Ο. χρόνου ολοκλήρωσης</value></data>
   <data name="DaysShort"><value>η</value></data>
+  <data name="Damage"><value>Ζημιές</value></data>
+  <data name="DamagedPanels"><value>Σημειωμένα μέρη</value></data>
+  <data name="NoPanelsSelected"><value>Δεν έχουν σημειωθεί μέρη. Κάντε κλικ σε ένα μέρος του διαγράμματος για προσθήκη.</value></data>
+  <data name="NotesPlaceholder"><value>Σημειώσεις (προαιρετικό)</value></data>
+  <data name="Remove"><value>Αφαίρεση</value></data>
+  <data name="Removed"><value>Αφαιρέθηκε.</value></data>
 </root>

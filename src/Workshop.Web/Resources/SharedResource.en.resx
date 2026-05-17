@@ -393,4 +393,10 @@
   <data name="NoRepairsScheduled"><value>No repairs scheduled today.</value></data>
   <data name="AvgCycleTime"><value>Avg cycle time</value></data>
   <data name="DaysShort"><value>d</value></data>
+  <data name="Damage"><value>Damage</value></data>
+  <data name="DamagedPanels"><value>Damaged panels</value></data>
+  <data name="NoPanelsSelected"><value>No panels marked yet. Click a panel on the diagram to add it.</value></data>
+  <data name="NotesPlaceholder"><value>Notes (optional)</value></data>
+  <data name="Remove"><value>Remove</value></data>
+  <data name="Removed"><value>Removed.</value></data>
 </root>

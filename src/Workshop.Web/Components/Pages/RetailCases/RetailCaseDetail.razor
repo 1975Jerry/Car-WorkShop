@@ -63,6 +63,9 @@ else
                         }
                     </MudGrid>
                 </MudTabPanel>
+                <MudTabPanel Text="@L["Damage"]">
+                    <RetailDamageTab RetailCaseId="@Id" OnChanged="Refresh" />
+                </MudTabPanel>
                 <MudTabPanel Text="@L["Parts"]">
                     <RetailPartsTab RetailCaseId="@Id" OnChanged="Refresh" />
                 </MudTabPanel>

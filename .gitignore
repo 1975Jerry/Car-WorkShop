@@ -434,3 +434,6 @@ appsettings.*.Local.json
 .env.local
 logs/
 coverage/
+
+## Claude Code per-user state (not shared across the team)
+.claude/

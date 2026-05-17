@@ -53,6 +53,8 @@ public partial class SeedRunner
         await SeedDemoPortalUsersAsync(ct);
         await _db.SaveChangesAsync(ct);
         await SeedDemoCasesAsync(ct);
+        await RebalanceDemoCasesAcrossBranchesAsync(ct);
+        await BackfillDemoCaseEventsAsync(ct);
         _log.LogInformation("Seed complete.");
     }
 
@@ -217,9 +219,17 @@ public partial class SeedRunner
 
     private async Task SeedBranchesAsync(CancellationToken ct)
     {
-        if (await _db.Branches.AnyAsync(ct)) return;
+        // Upsert by Code so adding a branch to branches.json shows up on the next
+        // boot even when the table is already populated. User edits to existing
+        // branches via the admin UI are preserved.
         var data = await LoadAsync<List<BranchSeed>>("branches.json") ?? new();
-        foreach (var b in data)
+        if (data.Count == 0) return;
+
+        var existingCodes = await _db.Branches
+            .Where(b => data.Select(d => d.Code).Contains(b.Code))
+            .Select(b => b.Code).ToListAsync(ct);
+
+        foreach (var b in data.Where(d => !existingCodes.Contains(d.Code)))
         {
             var branch = new Branch
             {

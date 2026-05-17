@@ -166,6 +166,18 @@ public class RetailCaseConfiguration : IEntityTypeConfiguration<RetailCase>
     }
 }
 
+public class RetailCasePanelConfiguration : IEntityTypeConfiguration<RetailCasePanel>
+{
+    public void Configure(EntityTypeBuilder<RetailCasePanel> e)
+    {
+        e.HasIndex(x => new { x.RetailCaseId, x.BodyPanelId }).IsUnique();
+        e.HasOne(x => x.RetailCase).WithMany(c => c.DamagedPanels)
+            .HasForeignKey(x => x.RetailCaseId).OnDelete(DeleteBehavior.Cascade);
+        e.HasOne(x => x.BodyPanel).WithMany()
+            .HasForeignKey(x => x.BodyPanelId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 public class RetailPartLineConfiguration : IEntityTypeConfiguration<RetailPartLine>
 {
     public void Configure(EntityTypeBuilder<RetailPartLine> e)

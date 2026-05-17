@@ -1,0 +1,126 @@
+@using MediatR
+@using MudBlazor
+@using Workshop.Application.Features.BodyPanels
+@using Workshop.Application.Features.RetailCasePanels
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            <BodyPanelPicker Panels="_panels"
+                             OnPanelSelected="OnPick"
+                             SelectedPanelIds="_selectedIds" />
+        </MudItem>
+        <MudItem xs="12" md="7">
+            <MudPaper Class="pa-3" Outlined Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">@L["DamagedPanels"]</MudText>
+                @if (_selected.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense>@L["NoPanelsSelected"]</MudAlert>
+                }
+                else
+                {
+                    <MudSimpleTable Dense Hover Striped Bordered>
+                        <thead>
+                            <tr>
+                                <th style="width:90px;">@L["Code"]</th>
+                                <th>@L["Description"]</th>
+                                <th style="width:35%;">@L["NotesPlaceholder"]</th>
+                                <th style="width:110px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in _selected)
+                            {
+                                <tr>
+                                    <td><MudChip T="string" Size="Size.Small" Color="Color.Secondary" Text="@p.Code" /></td>
+                                    <td>@p.DescriptionGr</td>
+                                    <td>
+                                        <MudTextField T="string"
+                                                      Value="@p.Notes"
+                                                      ValueChanged="@(v => OnNotesChanged(p, v))"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Placeholder="@L["NotesPlaceholder"]"
+                                                      DebounceInterval="600" />
+                                    </td>
+                                    <td>
+                                        <MudButton Size="Size.Small" Color="Color.Error" Variant="Variant.Text"
+                                                   StartIcon="@Icons.Material.Filled.Delete"
+                                                   OnClick="@(() => OnRemove(p))">
+                                            @L["Remove"]
+                                        </MudButton>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid RetailCaseId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private bool _loading = true;
+    private IReadOnlyList<BodyPanelDto> _panels = Array.Empty<BodyPanelDto>();
+    private List<RetailCasePanelDto> _selected = new();
+    private HashSet<Guid> _selectedIds = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _panels = await Mediator.Send(new GetBodyPanelCatalogQuery());
+        await ReloadSelectedAsync();
+        _loading = false;
+    }
+
+    private async Task ReloadSelectedAsync()
+    {
+        var rows = await Mediator.Send(new GetRetailCasePanelsQuery(RetailCaseId));
+        _selected = rows.ToList();
+        _selectedIds = _selected.Select(r => r.BodyPanelId).ToHashSet();
+    }
+
+    private async Task OnPick(BodyPanelDto panel)
+    {
+        // Click in the picker = toggle. Already-marked panel → remove; otherwise add.
+        if (_selectedIds.Contains(panel.Id))
+        {
+            await Mediator.Send(new RemoveRetailCasePanelCommand(RetailCaseId, panel.Id));
+        }
+        else
+        {
+            await Mediator.Send(new AddRetailCasePanelCommand(RetailCaseId, panel.Id));
+        }
+        await ReloadSelectedAsync();
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private async Task OnRemove(RetailCasePanelDto panel)
+    {
+        await Mediator.Send(new RemoveRetailCasePanelCommand(RetailCaseId, panel.BodyPanelId));
+        await ReloadSelectedAsync();
+        Snackbar.Add(L["Removed"], Severity.Success);
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+
+    private async Task OnNotesChanged(RetailCasePanelDto panel, string? newValue)
+    {
+        if ((panel.Notes ?? string.Empty) == (newValue ?? string.Empty)) return;
+        await Mediator.Send(new UpdateRetailCasePanelNotesCommand(panel.Id, newValue));
+        // Refresh local snapshot so subsequent edits start from the saved value
+        await ReloadSelectedAsync();
+    }
+}

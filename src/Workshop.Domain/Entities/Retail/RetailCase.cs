@@ -30,6 +30,16 @@ public class RetailCase : Entity, IBranchScoped
     public ICollection<RetailPartLine> PartLines { get; set; } = new List<RetailPartLine>();
     public ICollection<Document> Documents { get; set; } = new List<Document>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<RetailCasePanel> DamagedPanels { get; set; } = new List<RetailCasePanel>();
+}
+
+public class RetailCasePanel : Entity
+{
+    public Guid RetailCaseId { get; set; }
+    public RetailCase RetailCase { get; set; } = null!;
+    public Guid BodyPanelId { get; set; }
+    public BodyPanel BodyPanel { get; set; } = null!;
+    public string? Notes { get; set; }
 }
 
 public class RetailPartLine : Entity

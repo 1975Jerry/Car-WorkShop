@@ -10,5 +10,17 @@
       "Name": "Αποθήκη Ταύρος",
       "Description": null
     }
+  },
+  {
+    "Name": "Υποκατάστημα — Γλυφάδα",
+    "Code": "GLYFADA",
+    "AddressLine": "Λεωφ. Βουλιαγμένης 120",
+    "City": "Γλυφάδα",
+    "PostalCode": "16674",
+    "Phone": "2108999000",
+    "Warehouse": {
+      "Name": "Αποθήκη Γλυφάδα",
+      "Description": null
+    }
   }
 ]
