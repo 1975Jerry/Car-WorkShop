@@ -32,7 +32,10 @@ public class ListInsuranceCompaniesHandler(IWorkshopDbContext db)
         {
             var s = q.Search.Trim().ToLower();
             query = query.Where(c => c.Name.ToLower().Contains(s)
-                || (c.VatNumber != null && c.VatNumber.Contains(s)));
+                || (c.VatNumber != null && c.VatNumber.Contains(s))
+                || (c.Phone != null && c.Phone.Contains(s))
+                || (c.Email != null && c.Email.ToLower().Contains(s))
+                || (c.AddressLine != null && c.AddressLine.ToLower().Contains(s)));
         }
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(c => c.Name)

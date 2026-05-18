@@ -40,6 +40,24 @@ public class GetCustomerLookupHandler : IRequestHandler<GetCustomerLookupQuery, 
     }
 }
 
+public record GetCustomerLookupByIdQuery(Guid Id) : IRequest<LookupItem?>;
+
+public class GetCustomerLookupByIdHandler : IRequestHandler<GetCustomerLookupByIdQuery, LookupItem?>
+{
+    private readonly IWorkshopDbContext _db;
+    public GetCustomerLookupByIdHandler(IWorkshopDbContext db) => _db = db;
+
+    public async Task<LookupItem?> Handle(GetCustomerLookupByIdQuery q, CancellationToken ct) =>
+        await _db.Customers.AsNoTracking()
+            .Where(c => c.Id == q.Id && !c.IsDeleted)
+            .Select(c => new LookupItem(
+                c.Id,
+                c.CustomerType == CustomerType.Company
+                    ? (c.CompanyName ?? "—")
+                    : (((c.LastName ?? "") + " " + (c.FirstName ?? "")).Trim())))
+            .FirstOrDefaultAsync(ct);
+}
+
 public record GetInsuranceCompanyLookupQuery : IRequest<IReadOnlyList<LookupItem>>;
 
 public class GetInsuranceCompanyLookupHandler

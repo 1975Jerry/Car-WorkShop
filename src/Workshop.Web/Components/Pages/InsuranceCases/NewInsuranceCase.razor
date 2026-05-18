@@ -3,12 +3,15 @@
 @using MediatR
 @using MudBlazor
 @using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.Customers
 @using Workshop.Application.Features.InsuranceCases
 @using Workshop.Application.Features.Vehicles
 @using Workshop.Domain.Enums
+@using Workshop.Web.Components.Pages.Customers
 @inject IMediator Mediator
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject IDialogService Dialogs
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
 
 <PageTitle>Paint Bull — @L["NewInsuranceCase"]</PageTitle>
@@ -21,11 +24,19 @@
             <MudStep Title="@L["StepClientVehicle"]">
                 <MudGrid>
                     <MudItem xs="12">
-                        <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
-                                         Value="_customer" ValueChanged="OnCustomerChanged"
-                                         ToStringFunc="@(x => x?.Label ?? "")"
-                                         Variant="Variant.Outlined" Margin="Margin.Dense" Required
-                                         ShowProgressIndicator />
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <div style="flex:1">
+                                <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
+                                                 Value="_customer" ValueChanged="OnCustomerChanged"
+                                                 ToStringFunc="@(x => x?.Label ?? "")"
+                                                 Variant="Variant.Outlined" Margin="Margin.Dense" Required
+                                                 ShowProgressIndicator />
+                            </div>
+                            <MudButton StartIcon="@Icons.Material.Filled.PersonAdd" Variant="Variant.Outlined"
+                                       Color="Color.Primary" OnClick="OpenCreateCustomer">
+                                @L["NewCustomer"]
+                            </MudButton>
+                        </MudStack>
                     </MudItem>
 
                     @if (_customer is not null)
@@ -269,6 +280,18 @@
         var page = await Mediator.Send(new ListVehiclesQuery(CustomerId: c.Id, PageSize: 100));
         _vehicles = page.Items.ToList();
         if (_vehicles.Count == 0) _addVehicleExpanded = true;
+    }
+
+    private async Task OpenCreateCustomer()
+    {
+        var p = new DialogParameters { ["Id"] = (Guid?)null };
+        var dialog = await Dialogs.ShowAsync<CustomerEditDialog>(L["NewCustomer"], p,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is null || result.Canceled) return;
+        if (result.Data is not Guid newId) return;
+        var lookup = await Mediator.Send(new GetCustomerLookupByIdQuery(newId));
+        if (lookup is not null) await OnCustomerChanged(lookup);
     }
 
     private async Task AddVehicle()

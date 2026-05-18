@@ -39,8 +39,15 @@ public class ListCustomersHandler : IRequestHandler<ListCustomersQuery, PagedLis
                 (c.LastName != null && c.LastName.ToLower().Contains(s)) ||
                 (c.CompanyName != null && c.CompanyName.ToLower().Contains(s)) ||
                 c.MobilePhone.Contains(s) ||
+                (c.SecondaryPhone != null && c.SecondaryPhone.Contains(s)) ||
                 (c.VatNumber != null && c.VatNumber.Contains(s)) ||
-                (c.Email != null && c.Email.ToLower().Contains(s)));
+                (c.TaxOffice != null && c.TaxOffice.ToLower().Contains(s)) ||
+                (c.IdNumber != null && c.IdNumber.ToLower().Contains(s)) ||
+                (c.Email != null && c.Email.ToLower().Contains(s)) ||
+                (c.AddressLine != null && c.AddressLine.ToLower().Contains(s)) ||
+                (c.City != null && c.City.ToLower().Contains(s)) ||
+                (c.PostalCode != null && c.PostalCode.Contains(s)) ||
+                (c.Notes != null && c.Notes.ToLower().Contains(s)));
         }
 
         var total = await query.CountAsync(ct);

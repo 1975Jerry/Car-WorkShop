@@ -3,11 +3,14 @@
 @using MediatR
 @using MudBlazor
 @using Workshop.Application.Common.Lookups
+@using Workshop.Application.Features.Customers
 @using Workshop.Application.Features.RetailCases
 @using Workshop.Application.Features.Vehicles
+@using Workshop.Web.Components.Pages.Customers
 @inject IMediator Mediator
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject IDialogService Dialogs
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
 
 <PageTitle>Paint Bull — @L["NewRetailCase"]</PageTitle>
@@ -15,71 +18,193 @@
 <MudText Typo="Typo.h4" Class="mb-4">@L["NewRetailCase"]</MudText>
 
 <MudPaper Class="pa-4" Elevation="0" Outlined>
-    <MudGrid>
-        <MudItem xs="12" md="6">
-            <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
-                             Value="_customer" ValueChanged="OnCustomerChanged"
-                             ToStringFunc="@(x => x?.Label ?? "")"
-                             Variant="Variant.Outlined" Margin="Margin.Dense" Required ShowProgressIndicator />
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudSelect T="Guid?" @bind-Value="_data.VehicleId" Label="@L["Vehicle"]"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Required Disabled="@(_customer is null)">
-                @foreach (var v in _vehicles)
-                {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)v.Id)">@v.PlateNumber — @v.Brand @v.Model</MudSelectItem>
-                }
-            </MudSelect>
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudSelect T="Guid?" @bind-Value="_data.BranchId" Label="@L["Branch"]"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Required>
-                @foreach (var b in _branches)
-                {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
-                }
-            </MudSelect>
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudDatePicker @bind-Date="_scheduledDate" Label="@L["ScheduledDate"]"
-                           Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
-        </MudItem>
-        <MudItem xs="12">
-            <MudTextField @bind-Value="_data.WorkType" Label="@L["WorkType"]" Required
-                          Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="300" />
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudNumericField @bind-Value="_data.FinalCost" Label="@L["FinalCost"]" Min="0" Format="N2"
-                             Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudNumericField @bind-Value="_data.VatAmount" Label="@L["VatAmount"]" Min="0" Format="N2"
-                             Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudField Label="@L["TotalWithVat"]" Variant="Variant.Outlined" Margin="Margin.Dense">
-                @((_data.FinalCost + _data.VatAmount).ToString("N2"))
-            </MudField>
-        </MudItem>
-        <MudItem xs="12">
-            <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="3"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-    </MudGrid>
+    <MudStepper @bind-ActiveIndex="_activeStep" OnPreviewInteraction="PreviewStep">
+        <ChildContent>
+            <MudStep Title="@L["StepClientVehicle"]">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <div style="flex:1">
+                                <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
+                                                 Value="_customer" ValueChanged="OnCustomerChanged"
+                                                 ToStringFunc="@(x => x?.Label ?? "")"
+                                                 Variant="Variant.Outlined" Margin="Margin.Dense" Required
+                                                 ShowProgressIndicator />
+                            </div>
+                            <MudButton StartIcon="@Icons.Material.Filled.PersonAdd" Variant="Variant.Outlined"
+                                       Color="Color.Primary" OnClick="OpenCreateCustomer">
+                                @L["NewCustomer"]
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+
+                    @if (_customer is not null)
+                    {
+                        <MudItem xs="12">
+                            @if (_vehicles.Count == 0)
+                            {
+                                <MudAlert Severity="Severity.Info" Class="mb-2">@L["NoVehiclesForClient"]</MudAlert>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.subtitle2" Class="mb-1">@L["SelectVehicle"]</MudText>
+                                <MudRadioGroup T="Guid?" Value="_data.VehicleId" ValueChanged="@(v => _data.VehicleId = v)">
+                                    @foreach (var v in _vehicles)
+                                    {
+                                        <MudPaper Outlined Class="pa-2 mb-2 d-flex align-center">
+                                            <MudRadio T="Guid?" Value="@((Guid?)v.Id)" Color="Color.Primary" />
+                                            <MudStack Spacing="0">
+                                                <MudText Typo="Typo.body1"><b>@v.PlateNumber</b> — @v.Brand @v.Model</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @(v.Year?.ToString() ?? L["NotProvided"])@(string.IsNullOrWhiteSpace(v.Color) ? "" : $" · {v.Color}")
+                                                </MudText>
+                                            </MudStack>
+                                        </MudPaper>
+                                    }
+                                </MudRadioGroup>
+                            }
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudExpansionPanels MultiExpansion="false">
+                                <MudExpansionPanel @bind-Expanded="_addVehicleExpanded">
+                                    <TitleContent>
+                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                            <MudIcon Icon="@Icons.Material.Filled.Add" />
+                                            <MudText>@L["AddNewVehicle"]</MudText>
+                                        </MudStack>
+                                    </TitleContent>
+                                    <ChildContent>
+                                        <MudGrid>
+                                            <MudItem xs="12" md="6">
+                                                <MudTextField @bind-Value="_newVehicle.PlateNumber" Label="@L["PlateNumber"]" Required
+                                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" md="6">
+                                                <MudNumericField T="int?" @bind-Value="_newVehicle.Year" Label="@L["Year"]"
+                                                                 Min="1900" Max="2100"
+                                                                 Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" md="6">
+                                                <MudTextField @bind-Value="_newVehicle.Brand" Label="@L["Brand"]" Required
+                                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" md="6">
+                                                <MudTextField @bind-Value="_newVehicle.Model" Label="@L["Model"]" Required
+                                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" Class="d-flex justify-end">
+                                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                           OnClick="AddVehicle" Disabled="@_addingVehicle">
+                                                    @L["Save"]
+                                                </MudButton>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </ChildContent>
+                                </MudExpansionPanel>
+                            </MudExpansionPanels>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudStep>
+
+            <MudStep Title="@L["StepCaseDetails"]">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="Guid?" @bind-Value="_data.BranchId" Label="@L["Branch"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                            @foreach (var b in _branches)
+                            {
+                                <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker @bind-Date="_scheduledDate" Label="@L["ScheduledDate"]"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_data.WorkType" Label="@L["WorkType"]" Required
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="300" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField @bind-Value="_data.FinalCost" Label="@L["FinalCost"]" Min="0" Format="N2"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField @bind-Value="_data.VatAmount" Label="@L["VatAmount"]" Min="0" Format="N2"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudField Label="@L["TotalWithVat"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @((_data.FinalCost + _data.VatAmount).ToString("N2"))
+                        </MudField>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="3"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+            </MudStep>
+
+            <MudStep Title="@L["StepReview"]">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["ReviewSummary"]</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Outlined Class="pa-3">
+                            <MudText Typo="Typo.subtitle2">@L["Customer"]</MudText>
+                            <MudText>@(_customer?.Label ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["Vehicle"]</MudText>
+                            <MudText>@SelectedVehicleLabel()</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Outlined Class="pa-3">
+                            <MudText Typo="Typo.subtitle2">@L["Branch"]</MudText>
+                            <MudText>@(LookupLabel(_branches, _data.BranchId) ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["ScheduledDate"]</MudText>
+                            <MudText>@(_scheduledDate?.ToString("yyyy-MM-dd") ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["WorkType"]</MudText>
+                            <MudText>@(string.IsNullOrWhiteSpace(_data.WorkType) ? L["NotProvided"] : _data.WorkType)</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["FinalCost"]</MudText>
+                            <MudText>@_data.FinalCost.ToString("N2")</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["VatAmount"]</MudText>
+                            <MudText>@_data.VatAmount.ToString("N2")</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["TotalWithVat"]</MudText>
+                            <MudText>@((_data.FinalCost + _data.VatAmount).ToString("N2"))</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudStep>
+        </ChildContent>
+    </MudStepper>
 
     <MudStack Row Class="mt-4" Justify="Justify.FlexEnd">
         <MudButton OnClick="@(() => Nav.NavigateTo("/cases/retail"))">@L["Cancel"]</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@_saving">@L["Create"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit"
+                   Disabled="@(_saving || !IsReviewStep())">
+            @L["Create"]
+        </MudButton>
     </MudStack>
 </MudPaper>
 
 @code {
+    private int _activeStep;
     private FormModel _data = new();
     private LookupItem? _customer;
     private DateTime? _scheduledDate;
     private bool _saving;
+    private bool _addingVehicle;
+    private bool _addVehicleExpanded;
+    private NewVehicleModel _newVehicle = new();
     private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
-    private IReadOnlyList<VehicleListItemDto> _vehicles = Array.Empty<VehicleListItemDto>();
+    private List<VehicleListItemDto> _vehicles = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,10 +219,128 @@
         _customer = c;
         _data.CustomerId = c?.Id ?? Guid.Empty;
         _data.VehicleId = null;
-        if (c is null) { _vehicles = Array.Empty<VehicleListItemDto>(); return; }
+        _vehicles = new();
+        _addVehicleExpanded = false;
+        if (c is null) return;
         var page = await Mediator.Send(new ListVehiclesQuery(CustomerId: c.Id, PageSize: 100));
-        _vehicles = page.Items;
+        _vehicles = page.Items.ToList();
+        if (_vehicles.Count == 0) _addVehicleExpanded = true;
     }
+
+    private async Task OpenCreateCustomer()
+    {
+        var p = new DialogParameters { ["Id"] = (Guid?)null };
+        var dialog = await Dialogs.ShowAsync<CustomerEditDialog>(L["NewCustomer"], p,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is null || result.Canceled) return;
+        if (result.Data is not Guid newId) return;
+        var lookup = await Mediator.Send(new GetCustomerLookupByIdQuery(newId));
+        if (lookup is not null) await OnCustomerChanged(lookup);
+    }
+
+    private async Task AddVehicle()
+    {
+        if (_customer is null) return;
+        if (string.IsNullOrWhiteSpace(_newVehicle.PlateNumber)
+            || string.IsNullOrWhiteSpace(_newVehicle.Brand)
+            || string.IsNullOrWhiteSpace(_newVehicle.Model))
+        {
+            Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+            return;
+        }
+
+        _addingVehicle = true;
+        try
+        {
+            var dto = new VehicleUpsertDto(
+                CustomerId: _customer.Id,
+                PlateNumber: _newVehicle.PlateNumber!.Trim(),
+                Vin: null,
+                Brand: _newVehicle.Brand!.Trim(),
+                Model: _newVehicle.Model!.Trim(),
+                Version: null,
+                Year: _newVehicle.Year,
+                Color: null,
+                FuelType: null,
+                Mileage: null,
+                InsuranceCompanyId: null,
+                PolicyNumber: null,
+                InsuranceExpiration: null,
+                Notes: null,
+                IsActive: true);
+
+            var id = await Mediator.Send(new CreateVehicleCommand(dto));
+
+            var item = new VehicleListItemDto(
+                Id: id,
+                PlateNumber: dto.PlateNumber,
+                Brand: dto.Brand,
+                Model: dto.Model,
+                Year: dto.Year,
+                Color: dto.Color,
+                CustomerDisplayName: _customer.Label,
+                CustomerId: _customer.Id,
+                InsuranceCompanyName: null,
+                IsActive: true,
+                CreatedAt: DateTime.UtcNow);
+            _vehicles.Add(item);
+            _data.VehicleId = id;
+            _newVehicle = new NewVehicleModel();
+            _addVehicleExpanded = false;
+            Snackbar.Add(L["VehicleAdded"], Severity.Success);
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _addingVehicle = false; }
+    }
+
+    private Task PreviewStep(StepperInteractionEventArgs args)
+    {
+        if (args.Action != StepAction.Complete) return Task.CompletedTask;
+
+        if (args.StepIndex == 0)
+        {
+            if (_customer is null)
+            {
+                Snackbar.Add(L["PleaseSelectClient"], Severity.Warning);
+                args.Cancel = true;
+                return Task.CompletedTask;
+            }
+            if (_data.VehicleId is null)
+            {
+                Snackbar.Add(L["PleaseSelectOrAddVehicle"], Severity.Warning);
+                args.Cancel = true;
+                return Task.CompletedTask;
+            }
+        }
+        else if (args.StepIndex == 1)
+        {
+            if (_data.BranchId is null || string.IsNullOrWhiteSpace(_data.WorkType))
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                args.Cancel = true;
+                return Task.CompletedTask;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private bool IsReviewStep() => _activeStep == 2;
+
+    private string SelectedVehicleLabel()
+    {
+        if (_data.VehicleId is null) return L["NotProvided"];
+        var v = _vehicles.FirstOrDefault(x => x.Id == _data.VehicleId);
+        if (v is null) return L["NotProvided"];
+        var year = v.Year?.ToString() ?? "";
+        return $"{v.PlateNumber} — {v.Brand} {v.Model} {year}".Trim();
+    }
+
+    private static string? LookupLabel(IReadOnlyList<LookupItem> items, Guid? id) =>
+        id is null ? null : items.FirstOrDefault(x => x.Id == id)?.Label;
 
     private async Task Submit()
     {
@@ -137,5 +380,13 @@
         public decimal FinalCost { get; set; }
         public decimal VatAmount { get; set; }
         public string? Notes { get; set; }
+    }
+
+    private class NewVehicleModel
+    {
+        public string? PlateNumber { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
+        public int? Year { get; set; }
     }
 }

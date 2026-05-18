@@ -33,7 +33,11 @@ public class ListSuppliersHandler(IWorkshopDbContext db)
             var s = q.Search.Trim().ToLower();
             query = query.Where(x => x.Name.ToLower().Contains(s)
                 || (x.VatNumber != null && x.VatNumber.Contains(s))
-                || (x.ContactPerson != null && x.ContactPerson.ToLower().Contains(s)));
+                || (x.ContactPerson != null && x.ContactPerson.ToLower().Contains(s))
+                || (x.Phone != null && x.Phone.Contains(s))
+                || (x.Email != null && x.Email.ToLower().Contains(s))
+                || (x.AddressLine != null && x.AddressLine.ToLower().Contains(s))
+                || (x.Notes != null && x.Notes.ToLower().Contains(s)));
         }
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(x => x.Name)

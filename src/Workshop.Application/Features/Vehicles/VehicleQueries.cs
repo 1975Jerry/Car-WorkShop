@@ -38,7 +38,15 @@ public class ListVehiclesHandler : IRequestHandler<ListVehiclesQuery, PagedList<
                 v.PlateNumber.ToLower().Contains(s) ||
                 (v.Vin != null && v.Vin.ToLower().Contains(s)) ||
                 v.Brand.ToLower().Contains(s) ||
-                v.Model.ToLower().Contains(s));
+                v.Model.ToLower().Contains(s) ||
+                (v.Version != null && v.Version.ToLower().Contains(s)) ||
+                (v.Color != null && v.Color.ToLower().Contains(s)) ||
+                (v.PolicyNumber != null && v.PolicyNumber.ToLower().Contains(s)) ||
+                (v.Notes != null && v.Notes.ToLower().Contains(s)) ||
+                (v.Customer.LastName != null && v.Customer.LastName.ToLower().Contains(s)) ||
+                (v.Customer.FirstName != null && v.Customer.FirstName.ToLower().Contains(s)) ||
+                (v.Customer.CompanyName != null && v.Customer.CompanyName.ToLower().Contains(s)) ||
+                v.Customer.MobilePhone.Contains(s));
         }
 
         var total = await query.CountAsync(ct);

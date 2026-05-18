@@ -36,7 +36,10 @@ public class ListBranchesHandler(IWorkshopDbContext db)
             query = query.Where(b =>
                 b.Name.ToLower().Contains(s) ||
                 b.Code.ToLower().Contains(s) ||
-                b.City.ToLower().Contains(s));
+                b.City.ToLower().Contains(s) ||
+                b.AddressLine.ToLower().Contains(s) ||
+                (b.PostalCode != null && b.PostalCode.Contains(s)) ||
+                (b.Phone != null && b.Phone.Contains(s)));
         }
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(b => b.Name)

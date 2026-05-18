@@ -38,7 +38,15 @@ public class ListRetailCasesHandler(IWorkshopDbContext db)
             query = query.Where(c =>
                 c.CaseNumber.ToLower().Contains(s) ||
                 c.WorkType.ToLower().Contains(s) ||
-                c.Vehicle.PlateNumber.ToLower().Contains(s));
+                (c.Notes != null && c.Notes.ToLower().Contains(s)) ||
+                c.Vehicle.PlateNumber.ToLower().Contains(s) ||
+                c.Vehicle.Brand.ToLower().Contains(s) ||
+                c.Vehicle.Model.ToLower().Contains(s) ||
+                (c.Customer.LastName != null && c.Customer.LastName.ToLower().Contains(s)) ||
+                (c.Customer.FirstName != null && c.Customer.FirstName.ToLower().Contains(s)) ||
+                (c.Customer.CompanyName != null && c.Customer.CompanyName.ToLower().Contains(s)) ||
+                c.Customer.MobilePhone.Contains(s) ||
+                c.Branch.Name.ToLower().Contains(s));
         }
 
         var total = await query.CountAsync(ct);

@@ -31,7 +31,11 @@ public class ListAdjustersHandler(IWorkshopDbContext db)
         if (!string.IsNullOrWhiteSpace(q.Search))
         {
             var s = q.Search.Trim().ToLower();
-            query = query.Where(a => a.FullName.ToLower().Contains(s));
+            query = query.Where(a => a.FullName.ToLower().Contains(s)
+                || (a.Phone != null && a.Phone.Contains(s))
+                || (a.Email != null && a.Email.ToLower().Contains(s))
+                || (a.Notes != null && a.Notes.ToLower().Contains(s))
+                || (a.InsuranceCompany != null && a.InsuranceCompany.Name.ToLower().Contains(s)));
         }
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(a => a.FullName)

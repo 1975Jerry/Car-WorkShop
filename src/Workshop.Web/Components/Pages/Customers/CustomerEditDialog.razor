@@ -147,13 +147,19 @@
                 _data.SecondaryPhone, _data.Email, _data.AddressLine, _data.City, _data.PostalCode,
                 _data.GdprConsent, _data.Notes, _data.IsActive);
 
+            Guid resultId;
             if (Id.HasValue)
+            {
                 await Mediator.Send(new UpdateCustomerCommand(Id.Value, dto));
+                resultId = Id.Value;
+            }
             else
-                await Mediator.Send(new CreateCustomerCommand(dto));
+            {
+                resultId = await Mediator.Send(new CreateCustomerCommand(dto));
+            }
 
             Snackbar.Add(L["SavedSuccessfully"], Severity.Success);
-            Dialog.Close(DialogResult.Ok(true));
+            Dialog.Close(DialogResult.Ok(resultId));
         }
         catch (FluentValidation.ValidationException ex)
         {
