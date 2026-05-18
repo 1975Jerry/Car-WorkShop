@@ -422,4 +422,19 @@
   <data name="NotesPlaceholder"><value>Notes (optional)</value></data>
   <data name="Remove"><value>Remove</value></data>
   <data name="Removed"><value>Removed.</value></data>
+  <data name="StepClientVehicle"><value>Client &amp; Vehicle</value></data>
+  <data name="StepCaseDetails"><value>Case Details</value></data>
+  <data name="StepDriver"><value>Driver</value></data>
+  <data name="StepReview"><value>Review &amp; Create</value></data>
+  <data name="Next"><value>Next</value></data>
+  <data name="Back"><value>Back</value></data>
+  <data name="AddNewVehicle"><value>Add New Vehicle</value></data>
+  <data name="DriverDifferentFromOwner"><value>Driver different from owner</value></data>
+  <data name="PleaseSelectClient"><value>Please select a client</value></data>
+  <data name="PleaseSelectOrAddVehicle"><value>Please select or add a vehicle</value></data>
+  <data name="VehicleAdded"><value>Vehicle added.</value></data>
+  <data name="SelectVehicle"><value>Select vehicle</value></data>
+  <data name="NoVehiclesForClient"><value>This client has no vehicles yet. Add one below.</value></data>
+  <data name="ReviewSummary"><value>Review summary</value></data>
+  <data name="NotProvided"><value>—</value></data>
 </root>

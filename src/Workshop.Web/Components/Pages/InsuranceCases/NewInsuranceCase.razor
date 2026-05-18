@@ -16,104 +16,238 @@
 <MudText Typo="Typo.h4" Class="mb-4">@L["NewInsuranceCase"]</MudText>
 
 <MudPaper Class="pa-4" Elevation="0" Outlined>
-    <MudText Typo="Typo.h6" Class="mb-2">@L["CaseDetails"]</MudText>
-    <MudGrid>
-        <MudItem xs="12" md="6">
-            <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
-                             Value="_customer" ValueChanged="OnCustomerChanged"
-                             ToStringFunc="@(x => x?.Label ?? "")"
-                             Variant="Variant.Outlined" Margin="Margin.Dense" Required
-                             ShowProgressIndicator />
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudSelect T="Guid?" @bind-Value="_data.VehicleId" Label="@L["Vehicle"]"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Required Disabled="@(_customer is null)">
-                @foreach (var v in _vehicles)
-                {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)v.Id)">@v.PlateNumber — @v.Brand @v.Model</MudSelectItem>
-                }
-            </MudSelect>
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudSelect T="Guid?" @bind-Value="_data.BranchId" Label="@L["Branch"]"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Required>
-                @foreach (var b in _branches)
-                {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
-                }
-            </MudSelect>
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudSelect T="Guid?" @bind-Value="_data.InsuranceCompanyId" Label="@L["InsuranceCompany"]"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Required>
-                @foreach (var ic in _companies)
-                {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)ic.Id)">@ic.Label</MudSelectItem>
-                }
-            </MudSelect>
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudTextField @bind-Value="_data.ClaimNumber" Label="@L["ClaimNumber"]"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudDatePicker @bind-Date="_accidentDate" Label="@L["AccidentDate"]"
-                           Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudNumericField @bind-Value="_data.MileageAtAssessment" Label="@L["Mileage"]" Min="0"
-                             Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudSelect T="CasePriority?" @bind-Value="_data.Priority" Label="@L["Priority"]" Clearable
-                       Variant="Variant.Outlined" Margin="Margin.Dense">
-                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Low)">Low</MudSelectItem>
-                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Normal)">Normal</MudSelectItem>
-                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.High)">High</MudSelectItem>
-                <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Urgent)">Urgent</MudSelectItem>
-            </MudSelect>
-        </MudItem>
+    <MudStepper @bind-ActiveIndex="_activeStep" OnPreviewInteraction="PreviewStep">
+        <ChildContent>
+            <MudStep Title="@L["StepClientVehicle"]">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudAutocomplete T="LookupItem" Label="@L["Customer"]" SearchFunc="SearchCustomers"
+                                         Value="_customer" ValueChanged="OnCustomerChanged"
+                                         ToStringFunc="@(x => x?.Label ?? "")"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Required
+                                         ShowProgressIndicator />
+                    </MudItem>
 
-        <MudItem xs="12"><MudDivider Class="my-2" /><MudText Typo="Typo.h6">@L["Driver"]</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["DriverHint"]</MudText>
-        </MudItem>
-        <MudItem xs="6">
-            <MudTextField @bind-Value="_data.DriverFirstName" Label="@L["FirstName"]"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="6">
-            <MudTextField @bind-Value="_data.DriverLastName" Label="@L["LastName"]"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="6">
-            <MudTextField @bind-Value="_data.DriverPhone" Label="@L["Phone"]"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="6">
-            <MudTextField @bind-Value="_data.DriverEmail" Label="@L["Email"]" InputType="InputType.Email"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
+                    @if (_customer is not null)
+                    {
+                        <MudItem xs="12">
+                            @if (_vehicles.Count == 0)
+                            {
+                                <MudAlert Severity="Severity.Info" Class="mb-2">@L["NoVehiclesForClient"]</MudAlert>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.subtitle2" Class="mb-1">@L["SelectVehicle"]</MudText>
+                                <MudRadioGroup T="Guid?" Value="_data.VehicleId" ValueChanged="@(v => _data.VehicleId = v)">
+                                    @foreach (var v in _vehicles)
+                                    {
+                                        <MudPaper Outlined Class="pa-2 mb-2 d-flex align-center">
+                                            <MudRadio T="Guid?" Value="@((Guid?)v.Id)" Color="Color.Primary" />
+                                            <MudStack Spacing="0">
+                                                <MudText Typo="Typo.body1"><b>@v.PlateNumber</b> — @v.Brand @v.Model</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @(v.Year?.ToString() ?? L["NotProvided"])@(string.IsNullOrWhiteSpace(v.Color) ? "" : $" · {v.Color}")
+                                                </MudText>
+                                            </MudStack>
+                                        </MudPaper>
+                                    }
+                                </MudRadioGroup>
+                            }
+                        </MudItem>
 
-        <MudItem xs="12">
-            <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="3"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-    </MudGrid>
+                        <MudItem xs="12">
+                            <MudExpansionPanels MultiExpansion="false">
+                                <MudExpansionPanel @bind-Expanded="_addVehicleExpanded">
+                                    <TitleContent>
+                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                            <MudIcon Icon="@Icons.Material.Filled.Add" />
+                                            <MudText>@L["AddNewVehicle"]</MudText>
+                                        </MudStack>
+                                    </TitleContent>
+                                    <ChildContent>
+                                        <MudGrid>
+                                            <MudItem xs="12" md="6">
+                                                <MudTextField @bind-Value="_newVehicle.PlateNumber" Label="@L["PlateNumber"]" Required
+                                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" md="6">
+                                                <MudNumericField T="int?" @bind-Value="_newVehicle.Year" Label="@L["Year"]"
+                                                                 Min="1900" Max="2100"
+                                                                 Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" md="6">
+                                                <MudTextField @bind-Value="_newVehicle.Brand" Label="@L["Brand"]" Required
+                                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" md="6">
+                                                <MudTextField @bind-Value="_newVehicle.Model" Label="@L["Model"]" Required
+                                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudItem>
+                                            <MudItem xs="12" Class="d-flex justify-end">
+                                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                           OnClick="AddVehicle" Disabled="@_addingVehicle">
+                                                    @L["Save"]
+                                                </MudButton>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </ChildContent>
+                                </MudExpansionPanel>
+                            </MudExpansionPanels>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudStep>
+
+            <MudStep Title="@L["StepCaseDetails"]">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="Guid?" @bind-Value="_data.BranchId" Label="@L["Branch"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                            @foreach (var b in _branches)
+                            {
+                                <MudSelectItem T="Guid?" Value="@((Guid?)b.Id)">@b.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="Guid?" @bind-Value="_data.InsuranceCompanyId" Label="@L["InsuranceCompany"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Required>
+                            @foreach (var ic in _companies)
+                            {
+                                <MudSelectItem T="Guid?" Value="@((Guid?)ic.Id)">@ic.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField @bind-Value="_data.ClaimNumber" Label="@L["ClaimNumber"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudDatePicker @bind-Date="_accidentDate" Label="@L["AccidentDate"]"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" Clearable />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField @bind-Value="_data.MileageAtAssessment" Label="@L["Mileage"]" Min="0"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="CasePriority?" @bind-Value="_data.Priority" Label="@L["Priority"]" Clearable
+                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Low)">Low</MudSelectItem>
+                            <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Normal)">Normal</MudSelectItem>
+                            <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.High)">High</MudSelectItem>
+                            <MudSelectItem T="CasePriority?" Value="@((CasePriority?)CasePriority.Urgent)">Urgent</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_data.Notes" Label="@L["Notes"]" Lines="3"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+            </MudStep>
+
+            <MudStep Title="@L["StepDriver"]">
+                <MudStack>
+                    <MudCheckBox T="bool" @bind-Value="_driverDifferent" Label="@L["DriverDifferentFromOwner"]" Color="Color.Primary" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["DriverHint"]</MudText>
+
+                    @if (_driverDifferent)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_data.DriverFirstName" Label="@L["FirstName"]"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_data.DriverLastName" Label="@L["LastName"]"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_data.DriverPhone" Label="@L["Phone"]"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_data.DriverEmail" Label="@L["Email"]" InputType="InputType.Email"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </MudStack>
+            </MudStep>
+
+            <MudStep Title="@L["StepReview"]">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["ReviewSummary"]</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Outlined Class="pa-3">
+                            <MudText Typo="Typo.subtitle2">@L["Customer"]</MudText>
+                            <MudText>@(_customer?.Label ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["Vehicle"]</MudText>
+                            <MudText>@SelectedVehicleLabel()</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Outlined Class="pa-3">
+                            <MudText Typo="Typo.subtitle2">@L["Branch"]</MudText>
+                            <MudText>@(LookupLabel(_branches, _data.BranchId) ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["InsuranceCompany"]</MudText>
+                            <MudText>@(LookupLabel(_companies, _data.InsuranceCompanyId) ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["ClaimNumber"]</MudText>
+                            <MudText>@(string.IsNullOrWhiteSpace(_data.ClaimNumber) ? L["NotProvided"] : _data.ClaimNumber)</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["AccidentDate"]</MudText>
+                            <MudText>@(_accidentDate?.ToString("yyyy-MM-dd") ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["Mileage"]</MudText>
+                            <MudText>@(_data.MileageAtAssessment?.ToString() ?? L["NotProvided"])</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle2">@L["Priority"]</MudText>
+                            <MudText>@(_data.Priority?.ToString() ?? L["NotProvided"])</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    @if (_driverDifferent)
+                    {
+                        <MudItem xs="12">
+                            <MudPaper Outlined Class="pa-3">
+                                <MudText Typo="Typo.subtitle2" Class="mb-1">@L["Driver"]</MudText>
+                                <MudText>
+                                    @($"{_data.DriverFirstName} {_data.DriverLastName}".Trim())
+                                    @if (!string.IsNullOrWhiteSpace(_data.DriverPhone)) { <text> · @_data.DriverPhone</text> }
+                                    @if (!string.IsNullOrWhiteSpace(_data.DriverEmail)) { <text> · @_data.DriverEmail</text> }
+                                </MudText>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudStep>
+        </ChildContent>
+    </MudStepper>
 
     <MudStack Row Class="mt-4" Justify="Justify.FlexEnd">
         <MudButton OnClick="@(() => Nav.NavigateTo("/cases/insurance"))">@L["Cancel"]</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@_saving">@L["Create"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit"
+                   Disabled="@(_saving || !IsReviewStep())">
+            @L["Create"]
+        </MudButton>
     </MudStack>
 </MudPaper>
 
 @code {
+    private int _activeStep;
     private FormModel _data = new();
     private LookupItem? _customer;
     private DateTime? _accidentDate;
     private bool _saving;
+    private bool _addingVehicle;
+    private bool _addVehicleExpanded;
+    private bool _driverDifferent;
+    private NewVehicleModel _newVehicle = new();
     private IReadOnlyList<LookupItem> _branches = Array.Empty<LookupItem>();
     private IReadOnlyList<LookupItem> _companies = Array.Empty<LookupItem>();
-    private IReadOnlyList<VehicleListItemDto> _vehicles = Array.Empty<VehicleListItemDto>();
+    private List<VehicleListItemDto> _vehicles = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,10 +263,116 @@
         _customer = c;
         _data.CustomerId = c?.Id ?? Guid.Empty;
         _data.VehicleId = null;
-        if (c is null) { _vehicles = Array.Empty<VehicleListItemDto>(); return; }
+        _vehicles = new();
+        _addVehicleExpanded = false;
+        if (c is null) return;
         var page = await Mediator.Send(new ListVehiclesQuery(CustomerId: c.Id, PageSize: 100));
-        _vehicles = page.Items;
+        _vehicles = page.Items.ToList();
+        if (_vehicles.Count == 0) _addVehicleExpanded = true;
     }
+
+    private async Task AddVehicle()
+    {
+        if (_customer is null) return;
+        if (string.IsNullOrWhiteSpace(_newVehicle.PlateNumber)
+            || string.IsNullOrWhiteSpace(_newVehicle.Brand)
+            || string.IsNullOrWhiteSpace(_newVehicle.Model))
+        {
+            Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+            return;
+        }
+
+        _addingVehicle = true;
+        try
+        {
+            var dto = new VehicleUpsertDto(
+                CustomerId: _customer.Id,
+                PlateNumber: _newVehicle.PlateNumber!.Trim(),
+                Vin: null,
+                Brand: _newVehicle.Brand!.Trim(),
+                Model: _newVehicle.Model!.Trim(),
+                Version: null,
+                Year: _newVehicle.Year,
+                Color: null,
+                FuelType: null,
+                Mileage: null,
+                InsuranceCompanyId: null,
+                PolicyNumber: null,
+                InsuranceExpiration: null,
+                Notes: null,
+                IsActive: true);
+
+            var id = await Mediator.Send(new CreateVehicleCommand(dto));
+
+            var item = new VehicleListItemDto(
+                Id: id,
+                PlateNumber: dto.PlateNumber,
+                Brand: dto.Brand,
+                Model: dto.Model,
+                Year: dto.Year,
+                Color: dto.Color,
+                CustomerDisplayName: _customer.Label,
+                CustomerId: _customer.Id,
+                InsuranceCompanyName: null,
+                IsActive: true,
+                CreatedAt: DateTime.UtcNow);
+            _vehicles.Add(item);
+            _data.VehicleId = id;
+            _newVehicle = new NewVehicleModel();
+            _addVehicleExpanded = false;
+            Snackbar.Add(L["VehicleAdded"], Severity.Success);
+        }
+        catch (FluentValidation.ValidationException ex)
+        { foreach (var e in ex.Errors) Snackbar.Add(e.ErrorMessage, Severity.Error); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _addingVehicle = false; }
+    }
+
+    private Task PreviewStep(StepperInteractionEventArgs args)
+    {
+        if (args.Action != StepAction.Complete) return Task.CompletedTask;
+
+        if (args.StepIndex == 0)
+        {
+            if (_customer is null)
+            {
+                Snackbar.Add(L["PleaseSelectClient"], Severity.Warning);
+                args.Cancel = true;
+                return Task.CompletedTask;
+            }
+            if (_data.VehicleId is null)
+            {
+                Snackbar.Add(L["PleaseSelectOrAddVehicle"], Severity.Warning);
+                args.Cancel = true;
+                return Task.CompletedTask;
+            }
+        }
+        else if (args.StepIndex == 1)
+        {
+            if (_data.BranchId is null || _data.InsuranceCompanyId is null)
+            {
+                Snackbar.Add(L["FillRequiredFields"], Severity.Warning);
+                args.Cancel = true;
+                return Task.CompletedTask;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private bool IsReviewStep() => _activeStep == 3;
+
+    private string SelectedVehicleLabel()
+    {
+        if (_data.VehicleId is null) return L["NotProvided"];
+        var v = _vehicles.FirstOrDefault(x => x.Id == _data.VehicleId);
+        if (v is null) return L["NotProvided"];
+        var year = v.Year?.ToString() ?? "";
+        return $"{v.PlateNumber} — {v.Brand} {v.Model} {year}".Trim();
+    }
+
+    private static string? LookupLabel(IReadOnlyList<LookupItem> items, Guid? id) =>
+        id is null ? null : items.FirstOrDefault(x => x.Id == id)?.Label;
 
     private async Task Submit()
     {
@@ -149,7 +389,10 @@
             var dto = new InsuranceCaseUpsertDto(
                 _data.CustomerId, _data.VehicleId.Value, _data.BranchId.Value, _data.InsuranceCompanyId.Value,
                 _data.ClaimNumber, _data.Priority, AssessorId: null, AdjusterId: null, AssignedUserId: null,
-                _data.DriverFirstName, _data.DriverLastName, _data.DriverPhone, _data.DriverEmail,
+                _driverDifferent ? _data.DriverFirstName : null,
+                _driverDifferent ? _data.DriverLastName : null,
+                _driverDifferent ? _data.DriverPhone : null,
+                _driverDifferent ? _data.DriverEmail : null,
                 _accidentDate is null ? null : DateOnly.FromDateTime(_accidentDate.Value),
                 _data.MileageAtAssessment, _data.Notes);
 
@@ -177,5 +420,13 @@
         public string? DriverEmail { get; set; }
         public int? MileageAtAssessment { get; set; }
         public string? Notes { get; set; }
+    }
+
+    private class NewVehicleModel
+    {
+        public string? PlateNumber { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
+        public int? Year { get; set; }
     }
 }

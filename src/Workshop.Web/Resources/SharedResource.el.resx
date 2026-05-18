@@ -422,4 +422,19 @@
   <data name="NotesPlaceholder"><value>Σημειώσεις (προαιρετικό)</value></data>
   <data name="Remove"><value>Αφαίρεση</value></data>
   <data name="Removed"><value>Αφαιρέθηκε.</value></data>
+  <data name="StepClientVehicle"><value>Πελάτης &amp; Όχημα</value></data>
+  <data name="StepCaseDetails"><value>Στοιχεία Υπόθεσης</value></data>
+  <data name="StepDriver"><value>Οδηγός</value></data>
+  <data name="StepReview"><value>Επισκόπηση &amp; Δημιουργία</value></data>
+  <data name="Next"><value>Επόμενο</value></data>
+  <data name="Back"><value>Πίσω</value></data>
+  <data name="AddNewVehicle"><value>Προσθήκη Νέου Οχήματος</value></data>
+  <data name="DriverDifferentFromOwner"><value>Ο οδηγός διαφέρει από τον ιδιοκτήτη</value></data>
+  <data name="PleaseSelectClient"><value>Παρακαλώ επιλέξτε πελάτη</value></data>
+  <data name="PleaseSelectOrAddVehicle"><value>Παρακαλώ επιλέξτε ή προσθέστε όχημα</value></data>
+  <data name="VehicleAdded"><value>Το όχημα προστέθηκε.</value></data>
+  <data name="SelectVehicle"><value>Επιλογή οχήματος</value></data>
+  <data name="NoVehiclesForClient"><value>Ο πελάτης δεν έχει καταχωρημένα οχήματα. Προσθέστε ένα παρακάτω.</value></data>
+  <data name="ReviewSummary"><value>Σύνοψη</value></data>
+  <data name="NotProvided"><value>—</value></data>
 </root>
