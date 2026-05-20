@@ -41,8 +41,25 @@ RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
 # Guardrail against the SDK-300 regression: fail the build now if the Blazor
 # framework JS route is missing from the static-asset endpoint manifest,
 # instead of shipping a container that 404s at /_framework/blazor.web.js.
-RUN test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json \
- && grep -q '"Route":"_framework/blazor.web.js"' /app/publish/Workshop.Web.staticwebassets.endpoints.json
+#
+# Substring grep (not JSON-token-anchored) so whitespace / property ordering
+# in the manifest can't break the assertion. Diagnostics print every time so
+# CI logs always show what the publish actually produced.
+RUN set -eu; \
+    MANIFEST=/app/publish/Workshop.Web.staticwebassets.endpoints.json; \
+    echo "=== publish root ==="; ls -la /app/publish | head -25; \
+    if [ ! -f "$MANIFEST" ]; then \
+        echo "FATAL: $MANIFEST missing — static asset publishing broke (SDK regression?)"; \
+        exit 1; \
+    fi; \
+    echo "=== manifest size ==="; wc -c "$MANIFEST"; \
+    echo "=== _framework routes in manifest ==="; \
+    grep -oE '"Route":[[:space:]]*"_framework/[^"]+"' "$MANIFEST" | sort -u | head -30 || true; \
+    if ! grep -q '_framework/blazor.web.js' "$MANIFEST"; then \
+        echo "FATAL: _framework/blazor.web.js route absent from manifest — SDK pin drifted"; \
+        exit 1; \
+    fi; \
+    echo "=== guardrail passed ==="
 
 # ---- runtime stage ----------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
