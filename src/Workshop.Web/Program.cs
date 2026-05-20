@@ -94,6 +94,9 @@ try
 
     var app = builder.Build();
 
+    // Build-identifying banner so we can confirm in Azure logs which image is live.
+    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-fix-v2");
+
     // Apply migrations + seed on startup. Idempotent — safe to run every time.
     // Prefer SEED_DIR env var (e.g. inside Docker), else fall back to a sibling
     // ./seed folder, else the source-tree convention used in local development.
@@ -118,7 +121,6 @@ try
     }
 
     app.UseHttpsRedirection();
-    app.UseStaticFiles();
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseAntiforgery();
