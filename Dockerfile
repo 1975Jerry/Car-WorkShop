@@ -21,6 +21,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0.203 AS build
 WORKDIR /src
 
+# Prove which SDK the build layer is actually using. The image tag is meant to
+# be immutable, but BuildKit layer cache can keep an older base around — this
+# line makes the version visible in every build log, no inference needed.
+RUN dotnet --version && dotnet --info | head -20
+
 # Restore in its own layer keyed only on csproj + global.json so source edits
 # don't bust the NuGet cache.
 COPY global.json ./
@@ -53,8 +58,11 @@ RUN set -eu; \
         exit 1; \
     fi; \
     echo "=== manifest size ==="; wc -c "$MANIFEST"; \
-    echo "=== _framework routes in manifest ==="; \
-    grep -oE '"Route":[[:space:]]*"_framework/[^"]+"' "$MANIFEST" | sort -u | head -30 || true; \
+    echo "=== first 600 bytes of manifest ==="; head -c 600 "$MANIFEST"; echo; \
+    echo "=== unique route prefixes in manifest ==="; \
+    grep -oE '"Route":[[:space:]]*"[^/"]+' "$MANIFEST" | sort -u | head -40 || true; \
+    echo "=== any 'blazor' substring in manifest? ==="; \
+    grep -oiE 'blazor[a-z.]*' "$MANIFEST" | sort -u || echo "(none)"; \
     if ! grep -q '_framework/blazor.web.js' "$MANIFEST"; then \
         echo "FATAL: _framework/blazor.web.js route absent from manifest — SDK pin drifted"; \
         exit 1; \
