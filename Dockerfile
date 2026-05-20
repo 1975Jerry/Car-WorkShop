@@ -1,50 +1,82 @@
 # syntax=docker/dockerfile:1.7
 
-# ---- build stage ----------------------------------------------------------
-# Pinned to SDK feature band 200 to match global.json and keep publish output stable.
-# Blazor framework files are served from the static web asset endpoint manifest by
-# MapStaticAssets(); they are not required to materialize under publish/wwwroot.
+# =============================================================================
+# Paint Bull — Azure-targeted Linux container.
+#
+# Mirrors the local dev runtime exactly:
+#   - .NET SDK 10.0.203 (pinned by global.json; rollForward = latestPatch)
+#   - ASP.NET Core 10 runtime
+#   - net10.0 target for Domain / Application / Infrastructure / Web
+#
+# Build stage compiles + publishes; runtime stage carries only the ASP.NET
+# runtime plus the native libs the app actually exercises (QuestPDF / SkiaSharp
+# font stack, curl for the healthcheck).
+# =============================================================================
+
+# ---- build stage ------------------------------------------------------------
+# SDK 10.0.300 dropped Blazor framework JS extraction from publish output; the
+# 200-band pin keeps MapStaticAssets() serving _framework/blazor.web.js via the
+# static web asset endpoint manifest. Do not move this off 10.0.2xx without
+# re-validating the manifest assertion below.
 FROM mcr.microsoft.com/dotnet/sdk:10.0.203 AS build
 WORKDIR /src
 
-# Copy csproj files first for layer-cached restore.
-COPY src/Workshop.Domain/Workshop.Domain.csproj         src/Workshop.Domain/
-COPY src/Workshop.Application/Workshop.Application.csproj src/Workshop.Application/
+# Restore in its own layer keyed only on csproj + global.json so source edits
+# don't bust the NuGet cache.
+COPY global.json ./
+COPY src/Workshop.Domain/Workshop.Domain.csproj                 src/Workshop.Domain/
+COPY src/Workshop.Application/Workshop.Application.csproj       src/Workshop.Application/
 COPY src/Workshop.Infrastructure/Workshop.Infrastructure.csproj src/Workshop.Infrastructure/
-COPY src/Workshop.Web/Workshop.Web.csproj               src/Workshop.Web/
+COPY src/Workshop.Web/Workshop.Web.csproj                       src/Workshop.Web/
 RUN dotnet restore src/Workshop.Web/Workshop.Web.csproj
 
-# Bring in the source and publish.
+# Compile + framework-dependent publish (runtime image carries ASP.NET Core 10).
 COPY src/ src/
 RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
-    -c Release -o /app/publish --no-restore /p:UseAppHost=false
+        -c Release \
+        -o /app/publish \
+        --no-restore \
+        /p:UseAppHost=false
 
-# Sanity check the SDK pin worked and publish produced the static asset endpoint
-# route for the framework JS loaded by Components/App.razor.
-RUN echo "=== dotnet --info ===" && dotnet --info | head -8 \
- && echo "=== static web asset endpoint for _framework/blazor.web.js ===" \
- && test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json \
+# Guardrail against the SDK-300 regression: fail the build now if the Blazor
+# framework JS route is missing from the static-asset endpoint manifest,
+# instead of shipping a container that 404s at /_framework/blazor.web.js.
+RUN test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json \
  && grep -q '"Route":"_framework/blazor.web.js"' /app/publish/Workshop.Web.staticwebassets.endpoints.json
 
-# ---- runtime stage --------------------------------------------------------
+# ---- runtime stage ----------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y libgssapi-krb5-2 && rm -rf /var/lib/apt/lists/*
+# curl            — HEALTHCHECK probes /health/live
+# libfontconfig1  — SkiaSharp font subsystem (QuestPDF quote PDF rendering)
+# fonts-dejavu-core — sane fallback fonts so QuestPDF works without bundling extras
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        curl \
+        libfontconfig1 \
+        fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production \
-    SEED_DIR=/app/seed \
-    DOTNET_RUNNING_IN_CONTAINER=true
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    SEED_DIR=/app/seed
 
 COPY --from=build /app/publish ./
 COPY seed/ ./seed/
 
-# wwwroot/uploads is the IFileStore root; make sure it exists and is writable.
+# IFileStore root + Serilog file sink directory. Both are mounted as named
+# volumes in docker-compose; this RUN just guarantees the paths exist when
+# running without a volume (e.g. Azure App Service ephemeral filesystem).
 RUN mkdir -p /app/wwwroot/uploads /app/logs
 
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:8080/health/live || exit 1
+
+# start-period accounts for EF migrations + SeedRunner (clear lockouts, reset
+# passwords to default, hydrate body-panel/service/insurance catalogs) on a
+# cold DB. 20s was too tight against a fresh Postgres.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://localhost:8080/health/live || exit 1
 
 ENTRYPOINT ["dotnet", "Workshop.Web.dll"]
