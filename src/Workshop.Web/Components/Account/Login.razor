@@ -95,7 +95,7 @@
         }
 
         var result = await SignInManager.PasswordSignInAsync(
-            user, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+            user, Input.Password, Input.RememberMe, lockoutOnFailure: false);
 
         if (result.Succeeded)
         {
@@ -108,11 +108,6 @@
                 _ => "/"
             };
             Nav.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? fallback : ReturnUrl);
-            return;
-        }
-        if (result.IsLockedOut)
-        {
-            _errorMessage = L["AccountLocked"];
             return;
         }
         _errorMessage = L["InvalidCredentials"];

@@ -118,7 +118,6 @@
   <data name="Password"><value>Κωδικός</value></data>
   <data name="RememberMe"><value>Διατήρηση σύνδεσης</value></data>
   <data name="InvalidCredentials"><value>Λανθασμένο email ή κωδικός.</value></data>
-  <data name="AccountLocked"><value>Ο λογαριασμός είναι κλειδωμένος. Δοκιμάστε ξανά αργότερα.</value></data>
   <data name="AdminSubtitle"><value>Διαχείριση δεδομένων αναφοράς — καταστήματα, ασφαλιστικές, πραγματογνώμονες, διακανονιστές, προμηθευτές.</value></data>
   <data name="Branches"><value>Καταστήματα</value></data>
   <data name="BranchesHint"><value>Δίκτυο καταστημάτων και αποθηκών</value></data>

@@ -38,6 +38,9 @@ public partial class SeedRunner
     {
         await _db.Database.MigrateAsync(ct);
 
+        await ClearAllLockoutsAsync(ct);
+        await ResetAllPasswordsToDefaultAsync(ct);
+
         await SeedRolesAsync();
         await SeedAdminUserAsync();
         await SeedCompanyProfileAsync(ct);
@@ -56,6 +59,29 @@ public partial class SeedRunner
         await BackfillDemoCaseEventsAsync(ct);
         await ExpandDemoVehicleFleetAsync(ct);
         _log.LogInformation("Seed complete.");
+    }
+
+    private async Task ClearAllLockoutsAsync(CancellationToken ct)
+    {
+        await _db.Users.ExecuteUpdateAsync(setters => setters
+            .SetProperty(u => u.LockoutEnabled, false)
+            .SetProperty(u => u.LockoutEnd, (DateTimeOffset?)null)
+            .SetProperty(u => u.AccessFailedCount, 0), ct);
+    }
+
+    private async Task ResetAllPasswordsToDefaultAsync(CancellationToken ct)
+    {
+        var users = await _db.Users.ToListAsync(ct);
+        foreach (var user in users)
+        {
+            var token = await _users.GeneratePasswordResetTokenAsync(user);
+            var result = await _users.ResetPasswordAsync(user, token, DefaultSeedPassword);
+            if (!result.Succeeded)
+            {
+                _log.LogError("Failed to reset password for {email}: {errors}",
+                    user.Email, string.Join("; ", result.Errors.Select(e => e.Description)));
+            }
+        }
     }
 
     private async Task SeedDemoPortalUsersAsync(CancellationToken ct)
@@ -367,7 +393,7 @@ public partial class SeedRunner
     // Dev-only shared password reused across the seeded admin + demo portal users.
     // Same for everyone so screenshots and walkthroughs don't depend on chasing a
     // random value through the boot log. NEVER use this seeder against a production DB.
-    private const string DefaultSeedPassword = "Workshop1!";
+    private const string DefaultSeedPassword = "123456";
 }
 
 public static class SeedExtensions

@@ -42,10 +42,13 @@ public static class DependencyInjection
 
         services.AddIdentityCore<User>(o =>
         {
-            o.Password.RequiredLength = 8;
+            o.Password.RequiredLength = 6;
             o.Password.RequireNonAlphanumeric = false;
-            o.Password.RequireUppercase = true;
+            o.Password.RequireUppercase = false;
+            o.Password.RequireLowercase = false;
+            o.Password.RequireDigit = false;
             o.User.RequireUniqueEmail = true;
+            o.Lockout.AllowedForNewUsers = false;
         })
         .AddRoles<Role>()
         .AddEntityFrameworkStores<WorkshopDbContext>();

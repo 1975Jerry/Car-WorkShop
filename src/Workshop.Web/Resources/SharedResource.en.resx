@@ -118,7 +118,6 @@
   <data name="Password"><value>Password</value></data>
   <data name="RememberMe"><value>Remember me</value></data>
   <data name="InvalidCredentials"><value>Invalid email or password.</value></data>
-  <data name="AccountLocked"><value>Account locked. Try again later.</value></data>
   <data name="AdminSubtitle"><value>Manage reference data — branches, insurance companies, assessors, adjusters, suppliers.</value></data>
   <data name="Branches"><value>Branches</value></data>
   <data name="BranchesHint"><value>Branch network and warehouses</value></data>
