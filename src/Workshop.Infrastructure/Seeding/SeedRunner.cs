@@ -74,8 +74,11 @@ public partial class SeedRunner
         var users = await _db.Users.ToListAsync(ct);
         foreach (var user in users)
         {
-            var token = await _users.GeneratePasswordResetTokenAsync(user);
-            var result = await _users.ResetPasswordAsync(user, token, DefaultSeedPassword);
+            if (await _users.HasPasswordAsync(user))
+            {
+                await _users.RemovePasswordAsync(user);
+            }
+            var result = await _users.AddPasswordAsync(user, DefaultSeedPassword);
             if (!result.Succeeded)
             {
                 _log.LogError("Failed to reset password for {email}: {errors}",
