@@ -43,34 +43,36 @@ RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
         --no-restore \
         /p:UseAppHost=false
 
-# Publish-output diagnostics. NOT a build-failure gate anymore: same SDK
-# (10.0.203) produces _framework/* routes locally but not in CI containers,
-# and we'd rather ship and observe at runtime than block the deploy on a
-# check whose semantics keep moving. This block prints everything CI logs
-# need to diagnose a runtime /_framework/* 404 after the fact:
-#   - publish root (full, not truncated)
-#   - publish/wwwroot tree (does _framework/ exist on disk?)
-#   - manifest size + every "Route" prefix it contains
-#   - where blazor.web.js lives in the SDK image, if anywhere
+# Ensure the deployed container has a serving path for the script hardcoded in
+# Components/App.razor. MapStaticAssets can serve the manifest route; UseStaticFiles
+# can serve the physical wwwroot fallback. If neither exists, fail the image build
+# instead of shipping a Blazor app that 404s on /_framework/blazor.web.js.
 RUN set -eu; \
     MANIFEST=/app/publish/Workshop.Web.staticwebassets.endpoints.json; \
-    echo "=== publish root (full) ==="; ls -la /app/publish; \
-    echo "=== publish/wwwroot tree ==="; \
-    (find /app/publish/wwwroot -maxdepth 3 -printf '%p\n' 2>/dev/null || echo "(no wwwroot)"); \
-    echo "=== blazor.web.js search across SDK toolchain ==="; \
-    (find /src /usr/share/dotnet /root -name 'blazor.web.js' -type f 2>/dev/null || true); \
+    FRAMEWORK_DIR=/app/publish/wwwroot/_framework; \
+    BLAZOR_WEB_JS="$FRAMEWORK_DIR/blazor.web.js"; \
+    mkdir -p "$FRAMEWORK_DIR"; \
+    if [ ! -f "$BLAZOR_WEB_JS" ]; then \
+        echo "=== blazor.web.js missing from publish/wwwroot; searching SDK image for fallback ==="; \
+        CANDIDATE="$(find /root/.nuget/packages /usr/share/dotnet -name 'blazor.web.js' -type f 2>/dev/null | head -1 || true)"; \
+        if [ -n "$CANDIDATE" ]; then \
+            echo "=== copying fallback $CANDIDATE ==="; \
+            cp "$CANDIDATE" "$BLAZOR_WEB_JS"; \
+        fi; \
+    fi; \
     if [ -f "$MANIFEST" ]; then \
         echo "=== manifest size ==="; wc -c "$MANIFEST"; \
-        echo "=== unique route prefixes in manifest ==="; \
-        grep -oE '"Route":[[:space:]]*"[^/"]+' "$MANIFEST" | sort -u | head -40 || true; \
-        if grep -q '_framework/blazor.web.js' "$MANIFEST"; then \
-            echo "=== ok: _framework/blazor.web.js present in manifest ==="; \
-        else \
-            echo "=== WARN: _framework/blazor.web.js absent from manifest ==="; \
-            echo "===       runtime may 404 unless the file is on disk under wwwroot/_framework/ ==="; \
-        fi; \
+        grep -q '_framework/blazor.web.js' "$MANIFEST" && HAS_MANIFEST_ROUTE=1 || HAS_MANIFEST_ROUTE=0; \
     else \
-        echo "=== WARN: $MANIFEST missing ==="; \
+        HAS_MANIFEST_ROUTE=0; \
+    fi; \
+    if [ "$HAS_MANIFEST_ROUTE" = 1 ] || [ -f "$BLAZOR_WEB_JS" ]; then \
+        echo "=== ok: blazor.web.js is available via manifest route or physical wwwroot fallback ==="; \
+        ls -la "$FRAMEWORK_DIR"; \
+    else \
+        echo "ERROR: /_framework/blazor.web.js is unavailable in publish output."; \
+        echo "       The app will fail on Azure with a 404 for blazor.web.js."; \
+        exit 1; \
     fi
 
 # ---- runtime stage ----------------------------------------------------------
