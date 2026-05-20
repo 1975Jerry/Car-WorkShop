@@ -1,7 +1,13 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- build stage ----------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# Pinned to SDK feature band 200. The floating sdk:10.0 tag now resolves to 10.0.300,
+# which regressed Blazor framework asset publishing — blazor.web.js / blazor.server.js
+# no longer materialise into publish/wwwroot/_framework/ at all (the JS lives as an
+# embedded resource inside Microsoft.AspNetCore.Components.Web.dll and is no longer
+# extracted). 10.0.203 still emits the physical files, so /_framework/blazor.web.js
+# is served on Azure. Revisit once an MSBuild opt-in or 10.0.300+ fix exists.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.203 AS build
 WORKDIR /src
 
 # Copy csproj files first for layer-cached restore.
@@ -16,27 +22,12 @@ COPY src/ src/
 RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
     -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
-# Repair publish output. .NET SDK 10.0.300 regressed: blazor.web.js / blazor.server.js
-# no longer get copied into publish/wwwroot/_framework/, which makes /_framework/* 404
-# in production (MapStaticAssets auto-discovers from wwwroot — files not on disk = no
-# endpoint). The files still exist elsewhere in the SDK toolchain (bin output and
-# package caches), so we locate them and forward them into publish.
-RUN echo "=== dotnet --info ===" && dotnet --info | head -20 \
- && echo "=== publish/wwwroot before repair ===" && ls -la /app/publish/wwwroot \
- && echo "=== framework JS locations in the SDK image ===" \
- && (find /src /usr/share/dotnet /root \( -name 'blazor.web.js' -o -name 'blazor.server.js' \) -type f 2>/dev/null || true) \
- && mkdir -p /app/publish/wwwroot/_framework \
- && for f in blazor.web.js blazor.server.js; do \
-      src="$(find /src /usr/share/dotnet /root -name "$f" -type f 2>/dev/null | head -1)"; \
-      if [ -n "$src" ]; then \
-        cp "$src" "/app/publish/wwwroot/_framework/$f"; \
-        echo "forwarded $src -> /app/publish/wwwroot/_framework/$f"; \
-      else \
-        echo "FATAL: $f not found in SDK image"; exit 1; \
-      fi; \
-    done \
- && echo "=== publish/wwwroot/_framework after repair ===" \
- && ls -la /app/publish/wwwroot/_framework/
+# Sanity check the SDK pin worked and publish produced the framework JS we depend on.
+RUN echo "=== dotnet --info ===" && dotnet --info | head -8 \
+ && echo "=== publish/wwwroot/_framework ===" \
+ && ls -la /app/publish/wwwroot/_framework \
+ && test -f /app/publish/wwwroot/_framework/blazor.web.js \
+ && test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json
 
 # ---- runtime stage --------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
