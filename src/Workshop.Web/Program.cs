@@ -95,7 +95,7 @@ try
     var app = builder.Build();
 
     // Build-identifying banner so we can confirm in Azure logs which image is live.
-    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-fix-v3");
+    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-fix-v4-forward-framework-js");
 
     // Diagnostic for the "_framework/blazor.web.js 404 on Azure" issue. We've seen
     // _content/*, Identity/*, lib/*, and root files served fine but every /_framework/*

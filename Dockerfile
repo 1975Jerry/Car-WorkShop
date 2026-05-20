@@ -16,19 +16,27 @@ COPY src/ src/
 RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
     -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
-# Diagnose the Azure "/_framework/blazor.web.js 404" issue: dump the publish layout so
-# the build log shows exactly what was produced. Then fail loudly if the framework JS
-# is missing — turns a silent runtime 404 into a visible CI failure.
-RUN echo "=== dotnet --info ===" && dotnet --info \
- && echo "=== publish root ===" && ls -la /app/publish | head -50 \
- && echo "=== publish/wwwroot ===" && ls -la /app/publish/wwwroot \
- && echo "=== publish/wwwroot/_framework (or absent) ===" \
- && (ls -la /app/publish/wwwroot/_framework 2>&1 || true) \
- && echo "=== blazor.web.js in publish anywhere? ===" \
- && (find /app/publish -name 'blazor.web*' -o -name 'staticwebassets*' 2>&1 || true) \
- && echo "=== checking required artifacts ===" \
- && test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json \
- && test -f /app/publish/wwwroot/_framework/blazor.web.js
+# Repair publish output. .NET SDK 10.0.300 regressed: blazor.web.js / blazor.server.js
+# no longer get copied into publish/wwwroot/_framework/, which makes /_framework/* 404
+# in production (MapStaticAssets auto-discovers from wwwroot — files not on disk = no
+# endpoint). The files still exist elsewhere in the SDK toolchain (bin output and
+# package caches), so we locate them and forward them into publish.
+RUN echo "=== dotnet --info ===" && dotnet --info | head -20 \
+ && echo "=== publish/wwwroot before repair ===" && ls -la /app/publish/wwwroot \
+ && echo "=== framework JS locations in the SDK image ===" \
+ && (find /src /usr/share/dotnet /root \( -name 'blazor.web.js' -o -name 'blazor.server.js' \) -type f 2>/dev/null || true) \
+ && mkdir -p /app/publish/wwwroot/_framework \
+ && for f in blazor.web.js blazor.server.js; do \
+      src="$(find /src /usr/share/dotnet /root -name "$f" -type f 2>/dev/null | head -1)"; \
+      if [ -n "$src" ]; then \
+        cp "$src" "/app/publish/wwwroot/_framework/$f"; \
+        echo "forwarded $src -> /app/publish/wwwroot/_framework/$f"; \
+      else \
+        echo "FATAL: $f not found in SDK image"; exit 1; \
+      fi; \
+    done \
+ && echo "=== publish/wwwroot/_framework after repair ===" \
+ && ls -la /app/publish/wwwroot/_framework/
 
 # ---- runtime stage --------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
