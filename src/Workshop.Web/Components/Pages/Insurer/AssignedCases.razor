@@ -2,7 +2,7 @@
 @page "/insurer/cases"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "InsurerPortal")]
 @layout Workshop.Web.Components.Layout.InsurerLayout
-@using MediatR
+@using Workshop.Application.Common.Messaging
 @using MudBlazor
 @using Workshop.Application.Common.Abstractions
 @using Workshop.Application.Features.InsurerPortal

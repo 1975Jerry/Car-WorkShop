@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Workshop.Application.Common.Messaging;
 using Workshop.Application.Common.Abstractions;
 using Workshop.Domain.Entities.Shared;
 using Workshop.Domain.Enums;

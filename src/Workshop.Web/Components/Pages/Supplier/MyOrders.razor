@@ -2,7 +2,7 @@
 @page "/supplier/orders"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "SupplierPortal")]
 @layout Workshop.Web.Components.Layout.SupplierLayout
-@using MediatR
+@using Workshop.Application.Common.Messaging
 @using MudBlazor
 @using Workshop.Application.Common.Abstractions
 @using Workshop.Application.Features.SupplierPortal

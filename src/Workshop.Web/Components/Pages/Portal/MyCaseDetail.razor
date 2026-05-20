@@ -2,7 +2,7 @@
 @page "/portal/cases/retail/{Id:guid}"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "CustomerPortal")]
 @layout Workshop.Web.Components.Layout.PortalLayout
-@using MediatR
+@using Workshop.Application.Common.Messaging
 @using MudBlazor
 @using Workshop.Application.Common.Abstractions
 @using Workshop.Application.Features.CustomerPortal

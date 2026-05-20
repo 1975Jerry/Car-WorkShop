@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Logging;
+using Workshop.Application.Common.Messaging;
 
 namespace Workshop.Application.Common.Behaviors;
 
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : notnull
+    where TRequest : IRequest<TResponse>
 {
     private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _log;
 

@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Workshop.Application.Common.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
 using Workshop.Application.Common.Notifications;
