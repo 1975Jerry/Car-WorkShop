@@ -95,19 +95,16 @@ try
     var app = builder.Build();
 
     // Build-identifying banner so we can confirm in Azure logs which image is live.
-    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-fix-v5-sdk-pin-10.0.203");
+    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-static-assets-manifest-v1");
 
-    // Diagnostic for the "_framework/blazor.web.js 404 on Azure" issue. We've seen
-    // _content/*, Identity/*, lib/*, and root files served fine but every /_framework/*
-    // path 404. Log how many _framework/* routes the manifest declared AND whether the
-    // actual blazor.web.js file is on disk where MapStaticAssets expects it. If the
-    // file is missing in the container, that's the smoking gun.
+    // Diagnostic for framework asset routing. In published .NET 10 Blazor Web Apps,
+    // /_framework/blazor.web.js is served from the static web asset endpoint manifest
+    // by MapStaticAssets(); it does not need to exist under wwwroot/_framework.
     try
     {
         var manifestPath = Path.Combine(AppContext.BaseDirectory, "Workshop.Web.staticwebassets.endpoints.json");
-        var webRoot = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
-        var frameworkFile = Path.Combine(webRoot, "_framework", "blazor.web.js");
         int frameworkRoutes = 0;
+        var hasBlazorWebRoute = false;
         if (File.Exists(manifestPath))
         {
             using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(manifestPath));
@@ -119,13 +116,14 @@ try
                         && route.StartsWith("_framework/", StringComparison.Ordinal))
                     {
                         frameworkRoutes++;
+                        hasBlazorWebRoute |= route == "_framework/blazor.web.js";
                     }
                 }
             }
         }
         Log.Information(
-            "static-asset diagnostic: manifest={ManifestPath} exists={ManifestExists} framework-routes={FrameworkRoutes} blazor.web.js={BlazorPath} exists={BlazorExists}",
-            manifestPath, File.Exists(manifestPath), frameworkRoutes, frameworkFile, File.Exists(frameworkFile));
+            "static-asset diagnostic: manifest={ManifestPath} exists={ManifestExists} framework-routes={FrameworkRoutes} blazor.web.js-route={HasBlazorWebRoute}",
+            manifestPath, File.Exists(manifestPath), frameworkRoutes, hasBlazorWebRoute);
     }
     catch (Exception ex)
     {
