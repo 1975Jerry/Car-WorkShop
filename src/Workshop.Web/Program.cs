@@ -150,8 +150,14 @@ try
         return Results.LocalRedirect(target);
     });
 
+    // In .NET 9/10 Blazor Web Apps, framework assets (notably /_framework/blazor.web.js)
+    // are served by MapStaticAssets — UseStaticFiles alone misses them in published/Docker
+    // builds, which is why the interactive layer silently dies behind a 404 on Azure.
+    app.MapStaticAssets();
+
     app.MapRazorComponents<App>()
-        .AddInteractiveServerRenderMode();
+        .AddInteractiveServerRenderMode()
+        .WithStaticAssets();
 
     app.Run();
 }
