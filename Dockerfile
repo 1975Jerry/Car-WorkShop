@@ -16,11 +16,19 @@ COPY src/ src/
 RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
     -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
-# Fail loudly if the Blazor framework JS didn't make it into the publish output —
-# turns the previously-silent "_framework/blazor.web.js 404 on Azure" into a CI failure.
-RUN test -f /app/publish/wwwroot/_framework/blazor.web.js \
+# Diagnose the Azure "/_framework/blazor.web.js 404" issue: dump the publish layout so
+# the build log shows exactly what was produced. Then fail loudly if the framework JS
+# is missing — turns a silent runtime 404 into a visible CI failure.
+RUN echo "=== dotnet --info ===" && dotnet --info \
+ && echo "=== publish root ===" && ls -la /app/publish | head -50 \
+ && echo "=== publish/wwwroot ===" && ls -la /app/publish/wwwroot \
+ && echo "=== publish/wwwroot/_framework (or absent) ===" \
+ && (ls -la /app/publish/wwwroot/_framework 2>&1 || true) \
+ && echo "=== blazor.web.js in publish anywhere? ===" \
+ && (find /app/publish -name 'blazor.web*' -o -name 'staticwebassets*' 2>&1 || true) \
+ && echo "=== checking required artifacts ===" \
  && test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json \
- && ls -l /app/publish/wwwroot/_framework/
+ && test -f /app/publish/wwwroot/_framework/blazor.web.js
 
 # ---- runtime stage --------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
