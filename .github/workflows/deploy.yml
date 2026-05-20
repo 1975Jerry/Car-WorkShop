@@ -45,11 +45,19 @@ jobs:
         with:
           context: .
           push: true
+          # Diagnostic: temporarily disable BuildKit cache and force a fresh
+          # pull of the SDK / runtime base images. We suspect a stale GHA-cached
+          # layer is holding an older `sdk:10.0.203` (with the static-asset
+          # publishing regression) and producing a manifest without
+          # _framework/* routes. Re-enable below once the build is green by
+          # bumping a scoped cache key (e.g. scope=sdk-10.0.203-v2).
+          no-cache: true
+          pull: true
           tags: |
             ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
             ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
 
   deploy:
     needs: build-and-push
