@@ -118,6 +118,12 @@
   <data name="Password"><value>Password</value></data>
   <data name="RememberMe"><value>Remember me</value></data>
   <data name="InvalidCredentials"><value>Invalid email or password.</value></data>
+  <data name="UnexpectedError"><value>Something went wrong.</value></data>
+  <data name="UnexpectedErrorBody"><value>An unexpected error occurred while loading this page. Please try again.</value></data>
+  <data name="LoadFailed"><value>Failed to load data. Please try again.</value></data>
+  <data name="Retry"><value>Retry</value></data>
+  <data name="BackToHome"><value>Back to home</value></data>
+  <data name="Error"><value>Error</value></data>
   <data name="AdminSubtitle"><value>Manage reference data — branches, insurance companies, assessors, adjusters, suppliers.</value></data>
   <data name="Branches"><value>Branches</value></data>
   <data name="BranchesHint"><value>Branch network and warehouses</value></data>

@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Workshop.Application.Common.Abstractions;
@@ -11,8 +12,10 @@ using Workshop.Domain.Entities.Shared;
 
 namespace Workshop.Infrastructure.Persistence;
 
-public class WorkshopDbContext : IdentityDbContext<User, Role, Guid>, IWorkshopDbContext
+public class WorkshopDbContext : IdentityDbContext<User, Role, Guid>, IWorkshopDbContext, IDataProtectionKeyContext
 {
+    public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys => Set<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey>();
+
     private readonly ICurrentUserService _currentUser;
     private readonly IBranchScopeState? _scopeState;
 

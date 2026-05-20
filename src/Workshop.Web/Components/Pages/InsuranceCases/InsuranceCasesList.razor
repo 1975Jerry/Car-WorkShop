@@ -8,6 +8,8 @@
 @using Workshop.Web.Components.Shared
 @inject IMediator Mediator
 @inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject ILogger<InsuranceCasesList> Log
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
 
 <PageTitle>Paint Bull — @L["InsuranceCases"]</PageTitle>
@@ -85,18 +87,39 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _branches = await Mediator.Send(new GetBranchLookupQuery());
+        try
+        {
+            _branches = await Mediator.Send(new GetBranchLookupQuery());
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Failed to load branch lookup on InsuranceCasesList");
+            Snackbar.Add(L["LoadFailed"], Severity.Error);
+        }
     }
 
     private async Task<TableData<InsuranceCaseListItemDto>> LoadData(TableState state, CancellationToken ct)
     {
-        var r = await Mediator.Send(new ListInsuranceCasesQuery(
-            Search: _search,
-            Status: _statusFilter,
-            BranchId: _branchFilter,
-            Page: state.Page + 1,
-            PageSize: state.PageSize), ct);
-        return new TableData<InsuranceCaseListItemDto> { Items = r.Items, TotalItems = r.TotalCount };
+        try
+        {
+            var r = await Mediator.Send(new ListInsuranceCasesQuery(
+                Search: _search,
+                Status: _statusFilter,
+                BranchId: _branchFilter,
+                Page: state.Page + 1,
+                PageSize: state.PageSize), ct);
+            return new TableData<InsuranceCaseListItemDto> { Items = r.Items, TotalItems = r.TotalCount };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Failed to load insurance cases");
+            Snackbar.Add(L["LoadFailed"], Severity.Error);
+            return new TableData<InsuranceCaseListItemDto> { Items = Array.Empty<InsuranceCaseListItemDto>(), TotalItems = 0 };
+        }
     }
 
     private Task Reload() => _table?.ReloadServerData() ?? Task.CompletedTask;

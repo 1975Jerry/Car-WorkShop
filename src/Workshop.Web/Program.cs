@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using MudBlazor.Services;
 using Serilog;
@@ -28,6 +29,14 @@ try
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
 
+    // In Development surface real exception messages to the browser console so devs
+    // can diagnose render/circuit failures without scraping server logs. In Production
+    // the framework hides them behind a generic error.
+    builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(o =>
+    {
+        o.DetailedErrors = builder.Environment.IsDevelopment();
+    });
+
     builder.Services.AddMudServices();
     builder.Services.AddLocalization(o => o.ResourcesPath = "Resources");
 
@@ -48,6 +57,10 @@ try
     builder.Services.AddHealthChecks()
         .AddDbContextCheck<Workshop.Infrastructure.Persistence.WorkshopDbContext>(
             name: "db", tags: ["ready"]);
+
+    builder.Services.AddDataProtection()
+        .PersistKeysToDbContext<Workshop.Infrastructure.Persistence.WorkshopDbContext>()
+        .SetApplicationName("PaintBull");
 
     builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
         .AddIdentityCookies();

@@ -118,6 +118,12 @@
   <data name="Password"><value>Κωδικός</value></data>
   <data name="RememberMe"><value>Διατήρηση σύνδεσης</value></data>
   <data name="InvalidCredentials"><value>Λανθασμένο email ή κωδικός.</value></data>
+  <data name="UnexpectedError"><value>Κάτι πήγε στραβά.</value></data>
+  <data name="UnexpectedErrorBody"><value>Παρουσιάστηκε απρόσμενο σφάλμα κατά τη φόρτωση της σελίδας. Παρακαλώ δοκιμάστε ξανά.</value></data>
+  <data name="LoadFailed"><value>Αποτυχία φόρτωσης δεδομένων. Παρακαλώ δοκιμάστε ξανά.</value></data>
+  <data name="Retry"><value>Επανάληψη</value></data>
+  <data name="BackToHome"><value>Επιστροφή στην αρχική</value></data>
+  <data name="Error"><value>Σφάλμα</value></data>
   <data name="AdminSubtitle"><value>Διαχείριση δεδομένων αναφοράς — καταστήματα, ασφαλιστικές, πραγματογνώμονες, διακανονιστές, προμηθευτές.</value></data>
   <data name="Branches"><value>Καταστήματα</value></data>
   <data name="BranchesHint"><value>Δίκτυο καταστημάτων και αποθηκών</value></data>

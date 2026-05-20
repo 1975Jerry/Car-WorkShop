@@ -17,9 +17,11 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(assembly);
-            // Order matters: SerializeRequests must wrap ValidationBehavior so the
-            // lock is held across validation + handler, not just the handler body.
+            // Order matters: SerializeRequests must wrap everything so the lock is held
+            // across logging + validation + handler. Logging wraps Validation so
+            // ValidationException is logged at WARN level alongside other failures.
             cfg.AddOpenBehavior(typeof(SerializeRequestsBehavior<,>));
+            cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
         services.AddValidatorsFromAssembly(assembly);

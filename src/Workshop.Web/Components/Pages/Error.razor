@@ -1,0 +1,15 @@
+@page "/error"
+@attribute [Microsoft.AspNetCore.Components.ExcludeFromInteractiveRouting]
+@layout EmptyLayout
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["Error"]</PageTitle>
+
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#F7F8FA;">
+    <MudPaper Elevation="3" Class="pa-8" Style="width:480px; text-align:center;">
+        <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" Style="font-size:4rem;" />
+        <MudText Typo="Typo.h5" Class="mt-3 mb-2" Style="color:#1F3A5F;">@L["UnexpectedError"]</MudText>
+        <MudText Class="mb-4" Style="color:rgba(0,0,0,0.66);">@L["UnexpectedErrorBody"]</MudText>
+        <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" ForceLoad>@L["BackToHome"]</MudButton>
+    </MudPaper>
+</div>
