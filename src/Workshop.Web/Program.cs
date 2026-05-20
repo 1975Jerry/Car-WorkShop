@@ -95,7 +95,42 @@ try
     var app = builder.Build();
 
     // Build-identifying banner so we can confirm in Azure logs which image is live.
-    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-fix-v2");
+    Log.Information("Workshop.Web boot: static-assets=MapStaticAssets, build-tag=blazor-fix-v3");
+
+    // Diagnostic for the "_framework/blazor.web.js 404 on Azure" issue. We've seen
+    // _content/*, Identity/*, lib/*, and root files served fine but every /_framework/*
+    // path 404. Log how many _framework/* routes the manifest declared AND whether the
+    // actual blazor.web.js file is on disk where MapStaticAssets expects it. If the
+    // file is missing in the container, that's the smoking gun.
+    try
+    {
+        var manifestPath = Path.Combine(AppContext.BaseDirectory, "Workshop.Web.staticwebassets.endpoints.json");
+        var webRoot = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+        var frameworkFile = Path.Combine(webRoot, "_framework", "blazor.web.js");
+        int frameworkRoutes = 0;
+        if (File.Exists(manifestPath))
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(manifestPath));
+            if (doc.RootElement.TryGetProperty("Endpoints", out var endpoints))
+            {
+                foreach (var e in endpoints.EnumerateArray())
+                {
+                    if (e.TryGetProperty("Route", out var r) && r.GetString() is { } route
+                        && route.StartsWith("_framework/", StringComparison.Ordinal))
+                    {
+                        frameworkRoutes++;
+                    }
+                }
+            }
+        }
+        Log.Information(
+            "static-asset diagnostic: manifest={ManifestPath} exists={ManifestExists} framework-routes={FrameworkRoutes} blazor.web.js={BlazorPath} exists={BlazorExists}",
+            manifestPath, File.Exists(manifestPath), frameworkRoutes, frameworkFile, File.Exists(frameworkFile));
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "static-asset diagnostic failed");
+    }
 
     // Apply migrations + seed on startup. Idempotent — safe to run every time.
     // Prefer SEED_DIR env var (e.g. inside Docker), else fall back to a sibling

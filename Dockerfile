@@ -16,6 +16,12 @@ COPY src/ src/
 RUN dotnet publish src/Workshop.Web/Workshop.Web.csproj \
     -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
+# Fail loudly if the Blazor framework JS didn't make it into the publish output —
+# turns the previously-silent "_framework/blazor.web.js 404 on Azure" into a CI failure.
+RUN test -f /app/publish/wwwroot/_framework/blazor.web.js \
+ && test -f /app/publish/Workshop.Web.staticwebassets.endpoints.json \
+ && ls -l /app/publish/wwwroot/_framework/
+
 # ---- runtime stage --------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
