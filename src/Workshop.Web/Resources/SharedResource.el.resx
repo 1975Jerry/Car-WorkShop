@@ -457,4 +457,13 @@
   <data name="Refresh"><value>Ανανέωση</value></data>
   <data name="NoRecords"><value>Χωρίς εγγραφές.</value></data>
   <data name="ErrorLoading"><value>Αποτυχία φόρτωσης δεδομένων.</value></data>
+  <data name="Calendar"><value>Ημερολόγιο</value></data>
+  <data name="CalendarTileValue"><value>Άνοιγμα</value></data>
+  <data name="Today"><value>Σήμερα</value></data>
+  <data name="More"><value>ακόμη</value></data>
+  <data name="Legend"><value>Υπόμνημα</value></data>
+  <data name="RepairStatus_Scheduled"><value>Προγραμματισμένη</value></data>
+  <data name="RepairStatus_InProgress"><value>Σε εξέλιξη</value></data>
+  <data name="RepairStatus_OnHold"><value>Σε αναμονή</value></data>
+  <data name="RepairStatus_Completed"><value>Ολοκληρώθηκε</value></data>
 </root>

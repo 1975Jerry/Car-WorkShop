@@ -46,6 +46,11 @@ else
                      Value="@(_kpis.AvgCycleTimeDays is null ? "—" : $"{_kpis.AvgCycleTimeDays.Value:0.#}{L["DaysShort"]}")"
                      Icon="@Icons.Material.Filled.Timelapse" Color="Color.Dark" />
         </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="2">
+            <KpiTile Title="@L["Calendar"]" Value="@L["CalendarTileValue"]"
+                     Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Primary"
+                     OnClick="@(() => Nav.NavigateTo("/calendar"))" />
+        </MudItem>
     </MudGrid>
 
     <MudGrid Class="mt-4">

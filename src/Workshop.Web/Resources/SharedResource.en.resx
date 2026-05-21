@@ -457,4 +457,13 @@
   <data name="Refresh"><value>Refresh</value></data>
   <data name="NoRecords"><value>No records.</value></data>
   <data name="ErrorLoading"><value>Failed to load data.</value></data>
+  <data name="Calendar"><value>Calendar</value></data>
+  <data name="CalendarTileValue"><value>View</value></data>
+  <data name="Today"><value>Today</value></data>
+  <data name="More"><value>more</value></data>
+  <data name="Legend"><value>Legend</value></data>
+  <data name="RepairStatus_Scheduled"><value>Scheduled</value></data>
+  <data name="RepairStatus_InProgress"><value>In progress</value></data>
+  <data name="RepairStatus_OnHold"><value>On hold</value></data>
+  <data name="RepairStatus_Completed"><value>Completed</value></data>
 </root>

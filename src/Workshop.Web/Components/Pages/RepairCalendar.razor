@@ -1,0 +1,237 @@
+@page "/calendar"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using System.Globalization
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+@using Workshop.Application.Common.Messaging
+@using Workshop.Application.Features.Dashboard
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject ILogger<RepairCalendar> Log
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["Calendar"]</PageTitle>
+
+<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <MudText Typo="Typo.h4">@L["Calendar"]</MudText>
+    <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" OnClick="PrevMonth" />
+        <MudText Typo="Typo.h6" Style="min-width:180px; text-align:center;">@MonthLabel</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" OnClick="NextMonth" />
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Today" OnClick="GoToday">
+            @L["Today"]
+        </MudButton>
+    </MudStack>
+</MudStack>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0" Outlined="true">
+    <MudStack Row Spacing="4" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+        <MudText Typo="Typo.caption">@L["Legend"]:</MudText>
+        @foreach (var s in new[] { RepairStatus.Scheduled, RepairStatus.InProgress, RepairStatus.OnHold, RepairStatus.Completed })
+        {
+            <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                <span class="cal-legend-dot" style="background:@StatusHex(s)"></span>
+                <MudText Typo="Typo.caption">@StatusLabel(s)</MudText>
+            </MudStack>
+        }
+    </MudStack>
+</MudPaper>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else
+{
+    <div class="cal-grid">
+        @foreach (var dayName in WeekdayLabels)
+        {
+            <div class="cal-head">@dayName</div>
+        }
+        @foreach (var cell in _cells)
+        {
+            <div class="@CellClass(cell)">
+                <div class="cal-day-num">@cell.Date.Day</div>
+                @if (cell.Repairs.Count > 0)
+                {
+                    <div class="cal-chips">
+                        @foreach (var r in cell.Repairs.Take(MaxChips))
+                        {
+                            <div class="cal-chip"
+                                 style="background:@StatusHex(r.Status)"
+                                 title="@Tooltip(r)"
+                                 @onclick="@(() => OpenCase(r))">
+                                @ChipText(r)
+                            </div>
+                        }
+                        @if (cell.Repairs.Count > MaxChips)
+                        {
+                            <div class="cal-more">+@(cell.Repairs.Count - MaxChips) @L["More"]</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        background: #e0e0e0;
+        padding: 4px;
+        border-radius: 4px;
+    }
+    .cal-head {
+        background: #f5f5f5;
+        padding: 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: rgba(0,0,0,0.7);
+    }
+    .cal-cell {
+        background: #ffffff;
+        min-height: 110px;
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .cal-cell-other { background: #fafafa; }
+    .cal-cell-today { background: #fff9e1; border: 1px solid #f3c623; }
+    .cal-day-num { font-size: 0.8rem; color: rgba(0,0,0,0.6); }
+    .cal-cell-other .cal-day-num { color: rgba(0,0,0,0.3); }
+    .cal-chips { display: flex; flex-direction: column; gap: 2px; }
+    .cal-chip {
+        color: #ffffff;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 3px;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: filter .1s;
+    }
+    .cal-chip:hover { filter: brightness(1.08); }
+    .cal-more { font-size: 0.7rem; color: rgba(0,0,0,0.6); padding-left: 4px; }
+    .cal-legend-dot { display:inline-block; width:10px; height:10px; border-radius:50%; }
+</style>
+
+@code {
+    private const int MaxChips = 4;
+
+    private DateOnly _cursor = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly _today = DateOnly.FromDateTime(DateTime.Today);
+    private bool _loading = true;
+    private List<DayCell> _cells = new();
+    private CultureInfo Culture => CultureInfo.CurrentUICulture;
+    private string[] WeekdayLabels => BuildWeekdayLabels();
+
+    private string MonthLabel => _cursor.ToString("MMMM yyyy", Culture);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task PrevMonth() { _cursor = _cursor.AddMonths(-1); await LoadAsync(); }
+    private async Task NextMonth() { _cursor = _cursor.AddMonths(1); await LoadAsync(); }
+    private async Task GoToday() { _cursor = _today; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var firstOfMonth = new DateOnly(_cursor.Year, _cursor.Month, 1);
+            var firstWeekday = (int)Culture.DateTimeFormat.FirstDayOfWeek;
+            var lead = ((int)firstOfMonth.DayOfWeek - firstWeekday + 7) % 7;
+            var gridStart = firstOfMonth.AddDays(-lead);
+            // 6 weeks * 7 = 42 cells covers any month
+            var gridEnd = gridStart.AddDays(41);
+
+            var rows = await Mediator.Send(new ListCalendarRepairsQuery(gridStart, gridEnd));
+
+            var byDay = rows.GroupBy(r => r.ScheduledDate)
+                            .ToDictionary(g => g.Key, g => g.ToList());
+
+            _cells = Enumerable.Range(0, 42)
+                .Select(i =>
+                {
+                    var d = gridStart.AddDays(i);
+                    return new DayCell(d,
+                        d.Month == _cursor.Month,
+                        d == _today,
+                        byDay.TryGetValue(d, out var list) ? list : new List<CalendarRepairRow>());
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Failed to load calendar");
+            Snackbar.Add(L["ErrorLoading"], Severity.Error);
+            _cells = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string[] BuildWeekdayLabels()
+    {
+        var first = (int)Culture.DateTimeFormat.FirstDayOfWeek;
+        var names = Culture.DateTimeFormat.AbbreviatedDayNames;
+        return Enumerable.Range(0, 7).Select(i => names[(first + i) % 7]).ToArray();
+    }
+
+    private void OpenCase(CalendarRepairRow r) =>
+        Nav.NavigateTo(r.IsRetail ? $"/cases/retail/{r.CaseId}" : $"/cases/insurance/{r.CaseId}");
+
+    private string CellClass(DayCell c) =>
+        c.IsToday ? "cal-cell cal-cell-today"
+        : c.InMonth ? "cal-cell"
+        : "cal-cell cal-cell-other";
+
+    private string ChipText(CalendarRepairRow r)
+    {
+        var time = r.ScheduledTime is { } t ? t.ToString("HH:mm") + " " : "";
+        return $"{time}{r.Plate}".Trim();
+    }
+
+    private string Tooltip(CalendarRepairRow r)
+    {
+        var parts = new List<string>
+        {
+            $"{r.CaseNumber} — {StatusLabel(r.Status)}",
+            $"{r.Plate} {r.VehicleBrandModel}".Trim(),
+            r.CustomerLabel
+        };
+        if (!string.IsNullOrWhiteSpace(r.TechnicianName))
+            parts.Add($"{L["Technician"]}: {r.TechnicianName}");
+        return string.Join('\n', parts);
+    }
+
+    private string StatusLabel(RepairStatus s) => s switch
+    {
+        RepairStatus.Scheduled => L["RepairStatus_Scheduled"],
+        RepairStatus.InProgress => L["RepairStatus_InProgress"],
+        RepairStatus.OnHold => L["RepairStatus_OnHold"],
+        RepairStatus.Completed => L["RepairStatus_Completed"],
+        _ => s.ToString()
+    };
+
+    private static string StatusHex(RepairStatus s) => s switch
+    {
+        RepairStatus.Scheduled => "#1976d2",
+        RepairStatus.InProgress => "#f57c00",
+        RepairStatus.OnHold => "#9e9e9e",
+        RepairStatus.Completed => "#43a047",
+        _ => "#616161"
+    };
+
+    private sealed record DayCell(DateOnly Date, bool InMonth, bool IsToday, List<CalendarRepairRow> Repairs);
+}
