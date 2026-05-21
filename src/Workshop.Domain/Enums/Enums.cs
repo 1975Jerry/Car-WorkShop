@@ -180,3 +180,10 @@ public enum AuditAction
     Updated = 2,
     Deleted = 3
 }
+
+public enum LoginAuditEvent
+{
+    Login = 1,
+    Logout = 2,
+    LoginFailed = 3
+}

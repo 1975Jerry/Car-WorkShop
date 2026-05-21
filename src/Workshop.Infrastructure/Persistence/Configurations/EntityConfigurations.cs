@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Workshop.Domain.Entities.CrossCutting;
 using Workshop.Domain.Entities.Insurance;
 using Workshop.Domain.Entities.Retail;
 using Workshop.Domain.Entities.Shared;
@@ -203,5 +204,21 @@ public class CompanyProfileConfiguration : IEntityTypeConfiguration<CompanyProfi
     public void Configure(EntityTypeBuilder<CompanyProfile> e)
     {
         e.Property(x => x.DefaultVatRate).HasPrecision(5, 2);
+    }
+}
+
+public class LoginAuditEntryConfiguration : IEntityTypeConfiguration<LoginAuditEntry>
+{
+    public void Configure(EntityTypeBuilder<LoginAuditEntry> e)
+    {
+        e.HasIndex(x => x.OccurredAt).IsDescending();
+        e.HasIndex(x => x.Email);
+        e.Property(x => x.Email).HasMaxLength(256).IsRequired();
+        e.Property(x => x.IpAddress).HasMaxLength(64);
+        e.Property(x => x.UserAgent).HasMaxLength(512);
+        e.Property(x => x.FailureReason).HasMaxLength(256);
+        // SetNull so deleting a user (soft delete keeps row anyway, but defense in depth)
+        // doesn't cascade-delete their audit history.
+        e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
     }
 }

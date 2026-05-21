@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Identity
 @using MudBlazor
+@using Workshop.Application.Common.Abstractions
 @using Workshop.Domain.Entities.Identity
 @using Workshop.Domain.Enums
 
@@ -16,6 +17,7 @@
 @inject NavigationManager Nav
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
 @inject ILogger<Login> Log
+@inject ILoginAuditRecorder LoginAudit
 
 <PageTitle>Paint Bull — @L["SignIn"]</PageTitle>
 
@@ -90,6 +92,10 @@
         var user = await UserManager.FindByEmailAsync(Input.Email);
         if (user is null || !user.IsActive)
         {
+            await LoginAudit.RecordFailureAsync(
+                Input.Email,
+                user is null ? "UnknownEmail" : "InactiveUser",
+                user?.Id);
             _errorMessage = L["InvalidCredentials"];
             return;
         }
@@ -100,6 +106,7 @@
         if (result.Succeeded)
         {
             Log.LogInformation("User {email} signed in.", Input.Email);
+            await LoginAudit.RecordSuccessAsync(user.Id, Input.Email, user.PortalAudience);
             var fallback = user.PortalAudience switch
             {
                 PortalAudience.Customer => "/portal",
@@ -110,6 +117,13 @@
             Nav.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? fallback : ReturnUrl);
             return;
         }
+
+        await LoginAudit.RecordFailureAsync(
+            Input.Email,
+            result.IsLockedOut ? "LockedOut" :
+            result.IsNotAllowed ? "NotAllowed" :
+            result.RequiresTwoFactor ? "RequiresTwoFactor" : "BadPassword",
+            user.Id);
         _errorMessage = L["InvalidCredentials"];
     }
 

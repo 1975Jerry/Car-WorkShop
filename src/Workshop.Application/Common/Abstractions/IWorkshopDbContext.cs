@@ -48,6 +48,7 @@ public interface IWorkshopDbContext
     DbSet<CaseEvent> CaseEvents { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<LoginAuditEntry> LoginAuditEntries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

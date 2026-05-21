@@ -53,6 +53,19 @@
             </MudCardContent>
         </MudCard>
     </MudItem>
+    <AuthorizeView Roles="@Workshop.Domain.Entities.Identity.RoleNames.Admin">
+        <Authorized>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard Outlined Class="cursor-pointer" @onclick="@(() => Nav.NavigateTo("/admin/login-audit"))">
+                    <MudCardContent>
+                        <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6" Class="mt-2">@L["LoginAudit"]</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@L["LoginAuditHint"]</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </Authorized>
+    </AuthorizeView>
 </MudGrid>
 
 <style>

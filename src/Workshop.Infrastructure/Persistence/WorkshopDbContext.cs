@@ -82,6 +82,7 @@ public class WorkshopDbContext : IdentityDbContext<User, Role, Guid>, IWorkshopD
     public DbSet<CaseEvent> CaseEvents => Set<CaseEvent>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<LoginAuditEntry> LoginAuditEntries => Set<LoginAuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

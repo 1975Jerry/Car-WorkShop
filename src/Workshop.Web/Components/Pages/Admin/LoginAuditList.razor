@@ -1,0 +1,124 @@
+@page "/admin/login-audit"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = Workshop.Domain.Entities.Identity.RoleNames.Admin)]
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+@using Workshop.Application.Common.Messaging
+@using Workshop.Application.Features.LoginAudit
+@using Workshop.Domain.Enums
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject ILogger<LoginAuditList> Log
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> L
+
+<PageTitle>Paint Bull — @L["LoginAudit"]</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-2">@L["LoginAudit"]</MudText>
+<MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">@L["LoginAuditSubtitle"]</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0" Outlined="true">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="_search" Label="@L["Search"]" Variant="Variant.Outlined"
+                          Margin="Margin.Dense" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          DebounceInterval="300" OnDebounceIntervalElapsed="Reload" Clearable />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="LoginAuditEvent?" Value="_eventFilter" Label="@L["Event"]"
+                       Variant="Variant.Outlined" Margin="Margin.Dense"
+                       Clearable="true" ValueChanged="OnEventChanged">
+                <MudSelectItem T="LoginAuditEvent?" Value="@((LoginAuditEvent?)LoginAuditEvent.Login)">@L["LoginEvent_Login"]</MudSelectItem>
+                <MudSelectItem T="LoginAuditEvent?" Value="@((LoginAuditEvent?)LoginAuditEvent.Logout)">@L["LoginEvent_Logout"]</MudSelectItem>
+                <MudSelectItem T="LoginAuditEvent?" Value="@((LoginAuditEvent?)LoginAuditEvent.LoginFailed)">@L["LoginEvent_LoginFailed"]</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex justify-end">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="Reload">
+                @L["Refresh"]
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable ServerData="LoadData" T="LoginAuditListItemDto" Dense Hover Striped @ref="_table">
+    <HeaderContent>
+        <MudTh Style="width:160px">@L["OccurredAt"]</MudTh>
+        <MudTh Style="width:110px">@L["Event"]</MudTh>
+        <MudTh>@L["Email"]</MudTh>
+        <MudTh>@L["FullName"]</MudTh>
+        <MudTh Style="width:90px">@L["Portal"]</MudTh>
+        <MudTh Style="width:130px">@L["IpAddress"]</MudTh>
+        <MudTh>@L["UserAgent"]</MudTh>
+        <MudTh Style="width:120px">@L["FailureReason"]</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+        <MudTd>
+            <MudChip T="string" Size="Size.Small" Color="@ChipColor(context.Event)">
+                @EventLabel(context.Event)
+            </MudChip>
+        </MudTd>
+        <MudTd>@context.Email</MudTd>
+        <MudTd>@context.UserDisplayName</MudTd>
+        <MudTd>@(context.PortalAudience?.ToString() ?? "—")</MudTd>
+        <MudTd>@context.IpAddress</MudTd>
+        <MudTd Style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+               title="@context.UserAgent">@context.UserAgent</MudTd>
+        <MudTd>@context.FailureReason</MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>@L["NoRecords"]</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="@(new[] { 25, 50, 100 })" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<LoginAuditListItemDto>? _table;
+    private string? _search;
+    private LoginAuditEvent? _eventFilter;
+
+    private async Task<TableData<LoginAuditListItemDto>> LoadData(TableState state, CancellationToken ct)
+    {
+        try
+        {
+            var r = await Mediator.Send(new ListLoginAuditQuery(
+                Search: _search,
+                Event: _eventFilter,
+                Page: state.Page + 1,
+                PageSize: state.PageSize), ct);
+            return new TableData<LoginAuditListItemDto> { Items = r.Items, TotalItems = r.TotalCount };
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Failed to load login audit");
+            Snackbar.Add(L["ErrorLoading"], Severity.Error);
+            return new TableData<LoginAuditListItemDto> { Items = Array.Empty<LoginAuditListItemDto>(), TotalItems = 0 };
+        }
+    }
+
+    private Task Reload() => _table?.ReloadServerData() ?? Task.CompletedTask;
+
+    private Task OnEventChanged(LoginAuditEvent? value)
+    {
+        _eventFilter = value;
+        return Reload();
+    }
+
+    private string EventLabel(LoginAuditEvent e) => e switch
+    {
+        LoginAuditEvent.Login => L["LoginEvent_Login"],
+        LoginAuditEvent.Logout => L["LoginEvent_Logout"],
+        LoginAuditEvent.LoginFailed => L["LoginEvent_LoginFailed"],
+        _ => e.ToString()
+    };
+
+    private Color ChipColor(LoginAuditEvent e) => e switch
+    {
+        LoginAuditEvent.Login => Color.Success,
+        LoginAuditEvent.Logout => Color.Default,
+        LoginAuditEvent.LoginFailed => Color.Error,
+        _ => Color.Default
+    };
+}

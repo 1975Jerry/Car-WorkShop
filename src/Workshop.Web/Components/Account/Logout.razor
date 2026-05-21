@@ -1,15 +1,31 @@
 @page "/Account/Logout"
 @attribute [Microsoft.AspNetCore.Components.ExcludeFromInteractiveRouting]
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Identity
+@using Workshop.Application.Common.Abstractions
 @using Workshop.Domain.Entities.Identity
+@using Workshop.Domain.Enums
 @inject SignInManager<User> SignInManager
 @inject NavigationManager Nav
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ILoginAuditRecorder LoginAudit
 
 @code {
     protected override async Task OnInitializedAsync()
     {
+        var principal = HttpContextAccessor.HttpContext?.User;
+        if (principal?.Identity?.IsAuthenticated == true &&
+            Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            var email = principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+            var audience = Enum.TryParse<PortalAudience>(
+                principal.FindFirstValue(Services.PortalClaimsPrincipalFactory.PortalAudienceClaim), out var a)
+                ? a : (PortalAudience?)null;
+            await LoginAudit.RecordLogoutAsync(userId, email, audience);
+        }
+
         await SignInManager.SignOutAsync();
         Nav.NavigateTo("/Account/Login", forceLoad: true);
     }

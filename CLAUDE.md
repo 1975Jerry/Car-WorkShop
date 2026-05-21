@@ -29,6 +29,8 @@ dotnet ef migrations add <Name> \
 docker compose up -d
 ```
 
+**SDK pin — do not bump past 10.0.2xx casually.** `global.json` pins `10.0.203` with `rollForward: latestPatch`. SDK 10.0.300 dropped Blazor framework JS extraction from publish output, which breaks `/_framework/blazor.web.js` serving (the script is hardcoded in `Components/App.razor`). The Dockerfile has a build-time assertion that fails the image if neither the static-web-asset manifest route nor a physical `wwwroot/_framework/blazor.web.js` fallback exists — a green local build can still produce a broken container on a newer SDK. If you need to move to 10.0.3xx+, re-validate the manifest assertion in `Dockerfile` first.
+
 **WSL-on-Windows DB note:** when Docker Desktop isn't running and Postgres is installed on Windows, WSL's `localhost` does not bridge to it. Use the host-gateway IP. To override the connection string at runtime:
 
 ```bash

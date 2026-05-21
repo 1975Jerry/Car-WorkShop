@@ -41,3 +41,20 @@ public class Notification : Entity
     public bool IsRead { get; set; }
     public DateTime OccurredAt { get; set; }
 }
+
+public class LoginAuditEntry : Entity
+{
+    // Null when a failed login matched no user (unknown email).
+    public Guid? UserId { get; set; }
+    public User? User { get; set; }
+
+    // Always captured — the email the requester typed, even if no user matched.
+    public string Email { get; set; } = string.Empty;
+
+    public LoginAuditEvent Event { get; set; }
+    public PortalAudience? PortalAudience { get; set; }
+    public string? IpAddress { get; set; }
+    public string? UserAgent { get; set; }
+    public string? FailureReason { get; set; }
+    public DateTime OccurredAt { get; set; }
+}

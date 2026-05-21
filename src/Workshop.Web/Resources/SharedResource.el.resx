@@ -442,4 +442,19 @@
   <data name="NoVehiclesForClient"><value>Ο πελάτης δεν έχει καταχωρημένα οχήματα. Προσθέστε ένα παρακάτω.</value></data>
   <data name="ReviewSummary"><value>Σύνοψη</value></data>
   <data name="NotProvided"><value>—</value></data>
+  <data name="LoginAudit"><value>Ιστορικό Συνδέσεων</value></data>
+  <data name="LoginAuditHint"><value>Είσοδοι, αποσυνδέσεις και αποτυχημένες προσπάθειες</value></data>
+  <data name="LoginAuditSubtitle"><value>Αρχείο γεγονότων αυθεντικοποίησης για όλα τα portals.</value></data>
+  <data name="LoginEvent_Login"><value>Είσοδος</value></data>
+  <data name="LoginEvent_Logout"><value>Αποσύνδεση</value></data>
+  <data name="LoginEvent_LoginFailed"><value>Αποτυχία</value></data>
+  <data name="OccurredAt"><value>Ημ/νία</value></data>
+  <data name="IpAddress"><value>Διεύθυνση IP</value></data>
+  <data name="UserAgent"><value>User agent</value></data>
+  <data name="FailureReason"><value>Αιτία</value></data>
+  <data name="Event"><value>Γεγονός</value></data>
+  <data name="Portal"><value>Portal</value></data>
+  <data name="Refresh"><value>Ανανέωση</value></data>
+  <data name="NoRecords"><value>Χωρίς εγγραφές.</value></data>
+  <data name="ErrorLoading"><value>Αποτυχία φόρτωσης δεδομένων.</value></data>
 </root>

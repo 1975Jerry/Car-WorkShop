@@ -442,4 +442,19 @@
   <data name="NoVehiclesForClient"><value>This client has no vehicles yet. Add one below.</value></data>
   <data name="ReviewSummary"><value>Review summary</value></data>
   <data name="NotProvided"><value>—</value></data>
+  <data name="LoginAudit"><value>Login Audit</value></data>
+  <data name="LoginAuditHint"><value>Sign-in, sign-out, and failed login events</value></data>
+  <data name="LoginAuditSubtitle"><value>Audit trail of authentication events across every portal.</value></data>
+  <data name="LoginEvent_Login"><value>Login</value></data>
+  <data name="LoginEvent_Logout"><value>Logout</value></data>
+  <data name="LoginEvent_LoginFailed"><value>Failed</value></data>
+  <data name="OccurredAt"><value>Occurred at</value></data>
+  <data name="IpAddress"><value>IP address</value></data>
+  <data name="UserAgent"><value>User agent</value></data>
+  <data name="FailureReason"><value>Reason</value></data>
+  <data name="Event"><value>Event</value></data>
+  <data name="Portal"><value>Portal</value></data>
+  <data name="Refresh"><value>Refresh</value></data>
+  <data name="NoRecords"><value>No records.</value></data>
+  <data name="ErrorLoading"><value>Failed to load data.</value></data>
 </root>
