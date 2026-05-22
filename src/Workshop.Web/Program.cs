@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using MudBlazor.Services;
 using Serilog;
@@ -50,6 +51,19 @@ try
     builder.Services.AddWorkshopApplication();
 
     builder.Services.AddHttpContextAccessor();
+
+    // The app runs behind a reverse proxy (Docker / Azure App Service / nginx),
+    // so HttpContext.Connection.RemoteIpAddress is the proxy, not the real client.
+    // Honor X-Forwarded-For / X-Forwarded-Proto from any upstream — safe only
+    // because the container is reachable solely through the fronting proxy.
+    builder.Services.Configure<ForwardedHeadersOptions>(o =>
+    {
+        o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        o.KnownIPNetworks.Clear();
+        o.KnownProxies.Clear();
+        o.ForwardLimit = null;
+    });
+
     builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
     builder.Services.AddScoped<IBranchScopeState, CircuitBranchScopeState>();
     builder.Services.AddScoped<ILoginAuditRecorder, LoginAuditRecorder>();
@@ -147,6 +161,10 @@ try
         SupportedCultures = supportedCultures,
         SupportedUICultures = supportedCultures
     });
+
+    // Must run before anything that reads RemoteIpAddress or Request.Scheme
+    // (auth, redirects, login audit) so the values reflect the real client.
+    app.UseForwardedHeaders();
 
     if (!app.Environment.IsDevelopment())
     {
