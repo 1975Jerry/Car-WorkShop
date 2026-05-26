@@ -41,58 +41,28 @@
     else if (_view == ViewMode.Diagram)
     {
         <div class="bp-diagram-wrap">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" class="bp-diagram">
-                <!-- Car silhouette: hood/roof/trunk strip down the centerline, side panels around -->
-                <defs>
-                    <linearGradient id="bp-body" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#e3eaf3" />
-                        <stop offset="100%" stop-color="#cfd8e3" />
-                    </linearGradient>
-                </defs>
-                <!-- Outer body -->
-                <rect x="3" y="2" width="94" height="96" rx="14" ry="14"
-                      fill="url(#bp-body)" stroke="#90a4ae" stroke-width="0.4" />
-                <!-- Hood -->
-                <rect x="14" y="14" width="72" height="20" rx="3" ry="3"
-                      fill="#ffffff" stroke="#b0bec5" stroke-width="0.3" />
-                <!-- Windshield -->
-                <path d="M14 34 L86 34 L78 42 L22 42 Z" fill="#b3c5d6" stroke="#90a4ae" stroke-width="0.3" />
-                <!-- Roof -->
-                <rect x="22" y="42" width="56" height="22" rx="3" ry="3"
-                      fill="#ffffff" stroke="#b0bec5" stroke-width="0.3" />
-                <!-- Rear windshield -->
-                <path d="M22 64 L78 64 L86 72 L14 72 Z" fill="#b3c5d6" stroke="#90a4ae" stroke-width="0.3" />
-                <!-- Trunk -->
-                <rect x="14" y="72" width="72" height="14" rx="3" ry="3"
-                      fill="#ffffff" stroke="#b0bec5" stroke-width="0.3" />
-                <!-- Centerline guide (faint) -->
-                <line x1="50" y1="2" x2="50" y2="98" stroke="#cfd8e3" stroke-width="0.2" stroke-dasharray="0.6 0.8" />
-
-                @foreach (var panel in DiagramPanels)
-                {
-                    var dimmed = !MatchesFilters(panel);
-                    var selected = SelectedPanelIds.Contains(panel.Id);
-                    var fill = selected ? "#43a047" : "#1976d2";
-                    var opacity = dimmed ? 0.18 : 1.0;
-                    var cx = (double)panel.DiagramX!.Value;
-                    var cy = (double)panel.DiagramY!.Value;
-                    <g class="bp-hot @(dimmed ? "bp-hot-dim" : "")"
-                       @onclick="@(() => OnPick(panel))">
-                        <title>@panel.Code · @panel.DescriptionGr</title>
-                        <circle cx="@cx.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                cy="@cy.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                r="2.1"
-                                fill="@fill" fill-opacity="@opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
-                                stroke="#ffffff" stroke-width="0.4" />
-                    </g>
-                }
-            </svg>
-
-            @if (!DiagramPanels.Any(MatchesFilters))
+            <img src="img/car-view.jpg" class="bp-diagram-img" alt="@L["DamageSelector"]" draggable="false" />
+            @foreach (var panel in DiagramPanels)
             {
-                <MudAlert Severity="Severity.Info" Dense Class="mt-2">@L["NoDiagramCoords"]</MudAlert>
+                var dimmed = !MatchesFilters(panel);
+                var selected = SelectedPanelIds.Contains(panel.Id);
+                var cls = "bp-hot" + (selected ? " bp-hot-sel" : "") + (dimmed ? " bp-hot-dim" : "");
+                <button type="button" class="@cls"
+                        style="@($"left:{Pct(panel.DiagramX!.Value)}%;top:{Pct(panel.DiagramY!.Value)}%;")"
+                        title="@($"{panel.Code} · {panel.DescriptionGr}")"
+                        aria-label="@($"{panel.Code} {panel.DescriptionGr}")"
+                        aria-pressed="@selected"
+                        disabled="@dimmed"
+                        @onclick="@(() => OnPick(panel))">
+                    <span class="bp-hot-code">@panel.Code</span>
+                </button>
             }
         </div>
+
+        @if (!DiagramPanels.Any(MatchesFilters))
+        {
+            <MudAlert Severity="Severity.Info" Dense Class="mt-2">@L["NoDiagramCoords"]</MudAlert>
+        }
     }
     else
     {
@@ -120,11 +90,23 @@
 </MudPaper>
 
 <style>
-    .bp-diagram-wrap { max-width: 420px; margin: 0 auto; }
-    .bp-diagram { width: 100%; height: auto; display: block; }
-    .bp-hot { cursor: pointer; transition: transform 0.08s ease-out; transform-origin: center; transform-box: fill-box; }
-    .bp-hot:hover circle { stroke: #ffeb3b; stroke-width: 0.8; r: 2.6; }
-    .bp-hot-dim { cursor: default; pointer-events: none; }
+    .bp-diagram-wrap { position: relative; max-width: 1120px; margin: 0 auto; line-height: 0; }
+    .bp-diagram-img { width: 100%; height: auto; display: block; user-select: none; }
+    .bp-hot {
+        position: absolute; transform: translate(-50%, -50%);
+        width: 20px; height: 20px; padding: 0; border-radius: 50%;
+        border: 2px solid #fff; background: #1976d2; color: #fff;
+        font: 700 9px/1 sans-serif; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 2px rgba(0,0,0,.55); transition: transform .08s ease-out, background .1s;
+    }
+    .bp-hot:hover, .bp-hot:focus-visible {
+        background: #ffb300; transform: translate(-50%, -50%) scale(1.3); z-index: 3; outline: none;
+    }
+    .bp-hot:focus-visible { box-shadow: 0 0 0 2px #ffb300; }
+    .bp-hot-sel { background: #43a047; }
+    .bp-hot-dim { opacity: .15; pointer-events: none; }
+    .bp-hot-code { pointer-events: none; }
 </style>
 
 @code {
@@ -160,6 +142,8 @@
     {
         if (OnPanelSelected.HasDelegate) await OnPanelSelected.InvokeAsync(panel);
     }
+
+    private static string Pct(decimal v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private string SideLabel(PanelSide side) => side switch
     {

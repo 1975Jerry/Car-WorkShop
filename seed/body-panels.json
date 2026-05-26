@@ -5,8 +5,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 3.0
+    "DiagramX": 10.68,
+    "DiagramY": 45.66
   },
   {
     "Code": "2",
@@ -14,8 +14,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 8.0
+    "DiagramX": 14.38,
+    "DiagramY": 45.66
   },
   {
     "Code": "3",
@@ -23,8 +23,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 13.0
+    "DiagramX": 17.81,
+    "DiagramY": 45.66
   },
   {
     "Code": "4",
@@ -32,8 +32,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 22.0
+    "DiagramX": 26.3,
+    "DiagramY": 44.82
   },
   {
     "Code": "5",
@@ -41,8 +41,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 36.0
+    "DiagramX": 35.34,
+    "DiagramY": 45.66
   },
   {
     "Code": "6",
@@ -50,8 +50,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 45.0
+    "DiagramX": 45.21,
+    "DiagramY": 44.82
   },
   {
     "Code": "7",
@@ -59,8 +59,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 52.0
+    "DiagramX": 51.37,
+    "DiagramY": 45.38
   },
   {
     "Code": "8",
@@ -68,8 +68,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 75.0
+    "DiagramX": 58.9,
+    "DiagramY": 45.38
   },
   {
     "Code": "9",
@@ -77,8 +77,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 68.0
+    "DiagramX": 61.92,
+    "DiagramY": 45.38
   },
   {
     "Code": "10",
@@ -86,8 +86,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 80.0
+    "DiagramX": 65.48,
+    "DiagramY": 45.38
   },
   {
     "Code": "11",
@@ -95,8 +95,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 92.0
+    "DiagramX": 74.93,
+    "DiagramY": 45.66
   },
   {
     "Code": "12",
@@ -104,8 +104,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Center",
-    "DiagramX": 50.0,
-    "DiagramY": 97.0
+    "DiagramX": 79.73,
+    "DiagramY": 45.66
   },
   {
     "Code": "13",
@@ -113,8 +113,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 18.0,
-    "DiagramY": 20.0
+    "DiagramX": 15.75,
+    "DiagramY": 70.03
   },
   {
     "Code": "14",
@@ -122,8 +122,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 15.0,
-    "DiagramY": 26.0
+    "DiagramX": 23.29,
+    "DiagramY": 72.27
   },
   {
     "Code": "15",
@@ -131,8 +131,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 15.0,
-    "DiagramY": 42.0
+    "DiagramX": 36.99,
+    "DiagramY": 70.59
   },
   {
     "Code": "16",
@@ -140,8 +140,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 15.0,
-    "DiagramY": 56.0
+    "DiagramX": 48.22,
+    "DiagramY": 70.59
   },
   {
     "Code": "17",
@@ -149,8 +149,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 15.0,
-    "DiagramY": 72.0
+    "DiagramX": 56.44,
+    "DiagramY": 70.59
   },
   {
     "Code": "18",
@@ -158,8 +158,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 12.0,
-    "DiagramY": 76.0
+    "DiagramX": 67.81,
+    "DiagramY": 65.27
   },
   {
     "Code": "19",
@@ -167,8 +167,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 8.0,
-    "DiagramY": 28.0
+    "DiagramX": 15.34,
+    "DiagramY": 77.03
   },
   {
     "Code": "20",
@@ -176,8 +176,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 5.0,
-    "DiagramY": 28.0
+    "DiagramX": 24.93,
+    "DiagramY": 82.63
   },
   {
     "Code": "21",
@@ -185,8 +185,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 10.0,
-    "DiagramY": 49.0
+    "DiagramX": 35.34,
+    "DiagramY": 83.47
   },
   {
     "Code": "21Α",
@@ -194,8 +194,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 10.0,
-    "DiagramY": 52.0
+    "DiagramX": 38.36,
+    "DiagramY": 85.71
   },
   {
     "Code": "22",
@@ -203,8 +203,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 5.0,
-    "DiagramY": 74.0
+    "DiagramX": 51.37,
+    "DiagramY": 84.03
   },
   {
     "Code": "23",
@@ -212,8 +212,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 8.0,
-    "DiagramY": 74.0
+    "DiagramX": 68.9,
+    "DiagramY": 75.07
   },
   {
     "Code": "24",
@@ -221,8 +221,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 88.0,
-    "DiagramY": 20.0
+    "DiagramX": 8.49,
+    "DiagramY": 40.62
   },
   {
     "Code": "25",
@@ -230,8 +230,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 85.0,
-    "DiagramY": 26.0
+    "DiagramX": 25.34,
+    "DiagramY": 33.61
   },
   {
     "Code": "26",
@@ -239,8 +239,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 85.0,
-    "DiagramY": 42.0
+    "DiagramX": 39.04,
+    "DiagramY": 19.05
   },
   {
     "Code": "27",
@@ -248,8 +248,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 85.0,
-    "DiagramY": 56.0
+    "DiagramX": 47.67,
+    "DiagramY": 25.77
   },
   {
     "Code": "28",
@@ -257,8 +257,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 85.0,
-    "DiagramY": 72.0
+    "DiagramX": 57.53,
+    "DiagramY": 25.21
   },
   {
     "Code": "29",
@@ -266,8 +266,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 92.0,
-    "DiagramY": 28.0
+    "DiagramX": 13.01,
+    "DiagramY": 22.41
   },
   {
     "Code": "30",
@@ -275,8 +275,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 95.0,
-    "DiagramY": 28.0
+    "DiagramX": 28.08,
+    "DiagramY": 14.01
   },
   {
     "Code": "31",
@@ -284,8 +284,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 90.0,
-    "DiagramY": 49.0
+    "DiagramX": 38.36,
+    "DiagramY": 6.16
   },
   {
     "Code": "31Α",
@@ -293,8 +293,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 90.0,
-    "DiagramY": 52.0
+    "DiagramX": 39.04,
+    "DiagramY": 2.24
   },
   {
     "Code": "32",
@@ -302,8 +302,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 95.0,
-    "DiagramY": 74.0
+    "DiagramX": 57.53,
+    "DiagramY": 12.61
   },
   {
     "Code": "33",
@@ -311,8 +311,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 88.0,
-    "DiagramY": 76.0
+    "DiagramX": 66.16,
+    "DiagramY": 19.61
   },
   {
     "Code": "34",
@@ -320,8 +320,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 92.0,
-    "DiagramY": 74.0
+    "DiagramX": 63.01,
+    "DiagramY": 12.61
   },
   {
     "Code": "34Α",
@@ -329,8 +329,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 22.0,
-    "DiagramY": 9.0
+    "DiagramX": 19.86,
+    "DiagramY": 61.62
   },
   {
     "Code": "34Δ",
@@ -338,8 +338,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 78.0,
-    "DiagramY": 9.0
+    "DiagramX": 19.18,
+    "DiagramY": 32.21
   },
   {
     "Code": "35Α",
@@ -347,8 +347,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 20.0,
-    "DiagramY": 86.0
+    "DiagramX": 64.38,
+    "DiagramY": 59.66
   },
   {
     "Code": "35Δ",
@@ -356,8 +356,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 80.0,
-    "DiagramY": 86.0
+    "DiagramX": 64.38,
+    "DiagramY": 29.97
   },
   {
     "Code": "36Α",
@@ -365,8 +365,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 38.0,
-    "DiagramY": 83.0
+    "DiagramX": 64.38,
+    "DiagramY": 55.46
   },
   {
     "Code": "36Δ",
@@ -374,8 +374,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 62.0,
-    "DiagramY": 83.0
+    "DiagramX": 64.38,
+    "DiagramY": 34.17
   },
   {
     "Code": "37Α",
@@ -383,8 +383,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 28.0,
-    "DiagramY": 5.0
+    "DiagramX": 13.01,
+    "DiagramY": 58.82
   },
   {
     "Code": "37Δ",
@@ -392,8 +392,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 72.0,
-    "DiagramY": 5.0
+    "DiagramX": 13.01,
+    "DiagramY": 31.37
   },
   {
     "Code": "38Α",
@@ -401,8 +401,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 28.0,
-    "DiagramY": 94.0
+    "DiagramX": 70.96,
+    "DiagramY": 56.02
   },
   {
     "Code": "38Δ",
@@ -410,8 +410,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 72.0,
-    "DiagramY": 94.0
+    "DiagramX": 70.96,
+    "DiagramY": 32.21
   },
   {
     "Code": "39",
@@ -419,8 +419,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 22.0,
-    "DiagramY": 38.0
+    "DiagramX": 31.78,
+    "DiagramY": 64.99
   },
   {
     "Code": "40",
@@ -428,8 +428,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 78.0,
-    "DiagramY": 38.0
+    "DiagramX": 41.1,
+    "DiagramY": 49.02
   },
   {
     "Code": "41",
@@ -437,8 +437,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 82.0,
-    "DiagramY": 44.0
+    "DiagramX": 41.78,
+    "DiagramY": 30.25
   },
   {
     "Code": "42",
@@ -446,8 +446,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 82.0,
-    "DiagramY": 58.0
+    "DiagramX": 49.73,
+    "DiagramY": 35.85
   },
   {
     "Code": "43",
@@ -455,8 +455,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 80.0,
-    "DiagramY": 65.0
+    "DiagramX": 58.22,
+    "DiagramY": 35.85
   },
   {
     "Code": "44",
@@ -464,8 +464,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 18.0,
-    "DiagramY": 44.0
+    "DiagramX": 40.82,
+    "DiagramY": 61.06
   },
   {
     "Code": "45",
@@ -473,8 +473,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 18.0,
-    "DiagramY": 58.0
+    "DiagramX": 48.63,
+    "DiagramY": 60.78
   },
   {
     "Code": "46",
@@ -482,8 +482,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 20.0,
-    "DiagramY": 65.0
+    "DiagramX": 55.48,
+    "DiagramY": 60.78
   },
   {
     "Code": "47",
@@ -491,8 +491,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 78.0,
-    "DiagramY": 35.0
+    "DiagramX": 35.34,
+    "DiagramY": 30.25
   },
   {
     "Code": "48",
@@ -500,8 +500,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 78.0,
-    "DiagramY": 50.0
+    "DiagramX": 41.1,
+    "DiagramY": 34.73
   },
   {
     "Code": "49",
@@ -509,8 +509,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 78.0,
-    "DiagramY": 64.0
+    "DiagramX": 62.74,
+    "DiagramY": 35.85
   },
   {
     "Code": "50",
@@ -518,8 +518,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 22.0,
-    "DiagramY": 35.0
+    "DiagramX": 33.97,
+    "DiagramY": 60.78
   },
   {
     "Code": "51",
@@ -527,8 +527,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 22.0,
-    "DiagramY": 50.0
+    "DiagramX": 39.73,
+    "DiagramY": 57.42
   },
   {
     "Code": "52",
@@ -536,8 +536,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 22.0,
-    "DiagramY": 64.0
+    "DiagramX": 59.18,
+    "DiagramY": 59.66
   },
   {
     "Code": "53",
@@ -545,8 +545,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Left",
-    "DiagramX": 4.0,
-    "DiagramY": 37.0
+    "DiagramX": 33.97,
+    "DiagramY": 63.87
   },
   {
     "Code": "54",
@@ -554,8 +554,8 @@
     "DescriptionEn": null,
     "Category": "External",
     "Side": "Right",
-    "DiagramX": 96.0,
-    "DiagramY": 37.0
+    "DiagramX": 34.25,
+    "DiagramY": 25.21
   },
   {
     "Code": "55",
@@ -563,8 +563,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 34.93,
+    "DiagramY": 79.83
   },
   {
     "Code": "56",
@@ -572,8 +572,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 48.22,
+    "DiagramY": 80.67
   },
   {
     "Code": "57",
@@ -581,8 +581,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 35.34,
+    "DiagramY": 10.08
   },
   {
     "Code": "58",
@@ -590,8 +590,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 47.26,
+    "DiagramY": 10.08
   },
   {
     "Code": "59",
@@ -599,8 +599,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 41.78,
+    "DiagramY": 66.67
   },
   {
     "Code": "60",
@@ -608,8 +608,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 50.68,
+    "DiagramY": 67.23
   },
   {
     "Code": "61",
@@ -617,8 +617,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 42.74,
+    "DiagramY": 25.21
   },
   {
     "Code": "62",
@@ -626,8 +626,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 53.42,
+    "DiagramY": 26.61
   },
   {
     "Code": "63",
@@ -635,8 +635,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 45.21,
+    "DiagramY": 70.03
   },
   {
     "Code": "64",
@@ -644,8 +644,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 47.26,
+    "DiagramY": 71.71
   },
   {
     "Code": "65",
@@ -653,8 +653,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 36.99,
+    "DiagramY": 28.01
   },
   {
     "Code": "66",
@@ -662,8 +662,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 43.84,
+    "DiagramY": 28.01
   },
   {
     "Code": "67Α",
@@ -671,8 +671,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 78.77,
+    "DiagramY": 72.83
   },
   {
     "Code": "67Β",
@@ -680,8 +680,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 82.19,
+    "DiagramY": 72.83
   },
   {
     "Code": "67Γ",
@@ -689,8 +689,8 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Left",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 78.77,
+    "DiagramY": 76.19
   },
   {
     "Code": "67Δ",
@@ -698,7 +698,7 @@
     "DescriptionEn": null,
     "Category": "Internal",
     "Side": "Right",
-    "DiagramX": null,
-    "DiagramY": null
+    "DiagramX": 82.19,
+    "DiagramY": 76.19
   }
 ]

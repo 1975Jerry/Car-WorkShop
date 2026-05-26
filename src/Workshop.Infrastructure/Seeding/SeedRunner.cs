@@ -355,12 +355,11 @@ public partial class SeedRunner
 
     private async Task BackfillBodyPanelDiagramCoordsAsync(CancellationToken ct)
     {
-        // Existing DBs were seeded before diagram coords existed in body-panels.json.
-        // Only fill in rows still missing coords so manual tweaks stay intact.
-        var missing = await _db.BodyPanels
-            .Where(p => p.DiagramX == null && p.DiagramY == null)
-            .ToListAsync(ct);
-        if (missing.Count == 0) return;
+        // body-panels.json is the source of truth for the damage-selector hotspot
+        // positions (percent offsets onto wwwroot/img/car-view.jpg). Resync every
+        // startup so coordinate remaps land on already-seeded DBs, not just fresh ones.
+        var panels = await _db.BodyPanels.ToListAsync(ct);
+        if (panels.Count == 0) return;
 
         var seeds = await LoadAsync<List<BodyPanelSeed>>("body-panels.json") ?? new();
         var byCode = seeds
@@ -368,16 +367,17 @@ public partial class SeedRunner
             .ToDictionary(s => s.Code, s => (s.DiagramX!.Value, s.DiagramY!.Value));
 
         var updated = 0;
-        foreach (var panel in missing)
+        foreach (var panel in panels)
         {
             if (!byCode.TryGetValue(panel.Code, out var xy)) continue;
+            if (panel.DiagramX == xy.Item1 && panel.DiagramY == xy.Item2) continue;
             panel.DiagramX = xy.Item1;
             panel.DiagramY = xy.Item2;
             updated++;
         }
         if (updated > 0)
         {
-            _log.LogInformation("Backfilled diagram coordinates on {count} body panels.", updated);
+            _log.LogInformation("Synced diagram coordinates on {count} body panels from seed.", updated);
         }
     }
 
